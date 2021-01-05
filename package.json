@@ -1,0 +1,27 @@
+{
+  "name": "ping-cash",
+  "version": "1.0.0",
+  "description": "Send and Receive Money Via Phone Number.",
+  "main": "server.js",
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "mongoose": "^5.11.10"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/IMMANUEL5015/ping-cash.git"
+  },
+  "author": "Immanuel Diai",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/IMMANUEL5015/ping-cash/issues"
+  },
+  "homepage": "https://github.com/IMMANUEL5015/ping-cash#readme"
+}

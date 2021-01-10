@@ -9,7 +9,9 @@ const transactionSchema = mongoose.Schema({
     receiverFullName: String,
     receiverPhoneNumber: String,
     amount: String,
-    chargeReceiverTheCommission: Boolean
+    chargeReceiverTheCommission: Boolean,
+    reference: String,
+    status: String
 });
 
 module.exports = mongoose.model('Transaction', transactionSchema);

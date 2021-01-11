@@ -4,7 +4,8 @@ const chargeRateSchema = mongoose.Schema({
     name: {
         type: String,
         required: [true, 'Please specify the name of this charge rate.'],
-        enum: ['to-nigeria', 'within-nigeria']
+        enum: ['to-nigeria', 'within-nigeria'],
+        unique: true
     },
     flatOrPercentage: {
         type: String,

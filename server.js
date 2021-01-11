@@ -3,7 +3,7 @@ const express = require('express');
 const app = express();
 const mongoose = require('mongoose');
 const PORT = process.env.PORT;
-const router = require('./routes/transaction');
+const transactionRouter = require('./routes/transaction');
 const cors = require('cors');
 
 //Connect to database
@@ -18,7 +18,7 @@ mongoose.connect(URI, {
 
 app.use(cors());
 app.use(express.json());
-app.use(router);
+app.use('/transactions', transactionRouter);
 
 app.all('*', (req, res) => {
     res.status(404).json({

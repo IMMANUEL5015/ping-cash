@@ -5,9 +5,16 @@ exports.initializeTransaction = async (req, res, next) => {
     try {
         const uniqueString = randomString({ length: 6, numeric: true });
         const transaction = await Transaction.create({
-            ...req.body,
-            status: 'pending',
-            reference: `PNG-${uniqueString}eq`
+            reference: `PNG-${uniqueString}eq`,
+            transactionType: req.body.transactionType,
+            senderFullName: req.body.senderFullName,
+            senderPhoneNumber: req.body.senderPhoneNumber,
+            accountNumberForRefund: req.body.accountNumberForRefund,
+            bankForRefund: req.body.bankForRefund,
+            bankSortCode: req.body.bankSortCode,
+            receiverFullName: req.body.receiverFullName,
+            receiverPhoneNumber: req.body.amount,
+            chargeReceiverTheCommission: req.body.chargeReceiverTheCommission
         });
 
         return res.status(201).json({

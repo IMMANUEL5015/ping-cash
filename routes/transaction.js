@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const transaction = require('../controllers/transaction');
 
-router.post('/transactions',
+router.post('/',
     transaction.initializeTransaction
 );
 

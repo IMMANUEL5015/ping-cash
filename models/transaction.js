@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const ChargeRate = require('../models/chargerate');
 
 const transactionSchema = mongoose.Schema({
     transactionType: {
@@ -71,6 +72,36 @@ const transactionSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'ChargeRate'
     }
+});
+
+transactionSchema.pre('save', async function (next) {
+    //Determine the charges for a transaction
+    if (this.transactionType === 'send-within-nigeria') {
+        const chargeRate = await ChargeRate.findOne({
+            name: 'within-nigeria'
+        });
+
+        this.chargeRate = chargeRate ? chargeRate : undefined;
+        this.charges = chargeRate ? chargeRate.figure : '35';
+    }
+
+    if (this.transactionType === 'send-to-nigeria') {
+        const chargeRate = await ChargeRate.findOne({
+            name: 'within-nigeria'
+        });
+
+        if (chargeRate && chargeRate.flatOrPercentage === 'flat') {
+            this.charges = chargeRate.figure;
+        }
+
+        if (chargeRate && chargeRate.flatOrPercentage === 'percent') {
+            this.charges = (chargeRate.figure / 100) * this.amount;
+        }
+
+        this.chargeRate = chargeRate ? chargeRate : undefined;
+    }
+
+    next();
 });
 
 module.exports = mongoose.model('Transaction', transactionSchema);

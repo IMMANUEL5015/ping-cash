@@ -87,7 +87,7 @@ transactionSchema.pre('save', async function (next) {
 
     if (this.transactionType === 'send-to-nigeria') {
         const chargeRate = await ChargeRate.findOne({
-            name: 'within-nigeria'
+            name: 'to-nigeria'
         });
 
         if (chargeRate && chargeRate.flatOrPercentage === 'flat') {
@@ -99,6 +99,13 @@ transactionSchema.pre('save', async function (next) {
         }
 
         this.chargeRate = chargeRate ? chargeRate : undefined;
+    }
+
+    //Calculate the finalAmountPaid
+    if (!this.chargeReceiverTheCommission) {
+        this.finalAmountPaid = this.amount + this.charges;
+    } else {
+        this.finalAmountPaid = this.amount;
     }
 
     next();

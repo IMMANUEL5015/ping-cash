@@ -14,7 +14,9 @@ exports.initializeTransaction = async (req, res, next) => {
             bankSortCode: req.body.bankSortCode,
             receiverFullName: req.body.receiverFullName,
             receiverPhoneNumber: req.body.amount,
-            chargeReceiverTheCommission: req.body.chargeReceiverTheCommission
+            chargeReceiverTheCommission: req.body.chargeReceiverTheCommission,
+            country: req.body.country,
+            currency: req.body.currency
         });
 
         return res.status(201).json({

@@ -66,6 +66,10 @@ const transactionSchema = mongoose.Schema({
     currency: {
         type: String,
         required: [true, 'Please specify the currency you are using to make the payment.']
+    },
+    chargeRate: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'ChargeRate'
     }
 });
 

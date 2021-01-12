@@ -18,4 +18,9 @@ router.patch('/:id',
     chargeRate.updateChargeRate
 );
 
+router.delete('/:id',
+    chargeRate.findChargeRate,
+    chargeRate.deleteChargeRate
+);
+
 module.exports = router;

@@ -34,3 +34,8 @@ exports.updateChargeRate = catchAsync(async (req, res, next) => {
         { ...req.body }, { new: true });
     return success(res, 200, 'success', 'Updated Charge Rate!', chargeRate);
 });
+
+exports.deleteChargeRate = catchAsync(async (req, res, next) => {
+    await ChargeRate.findByIdAndDelete(req.params.id);
+    return res.status(204).json();
+});

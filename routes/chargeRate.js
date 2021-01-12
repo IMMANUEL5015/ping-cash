@@ -9,6 +9,7 @@ router.get('/',
 );
 
 router.get('/:id',
+    chargeRate.findChargeRate,
     chargeRate.seeChargeRate
 );
 

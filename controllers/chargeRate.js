@@ -1,6 +1,7 @@
 const ChargeRate = require('../models/chargerate');
 const catchAsync = require('../utils/catchAsync');
 const { success } = require('../utils/responses');
+const AppError = require('../utils/appError');
 
 exports.createChargeRate = catchAsync(async (req, res, next) => {
     const chargeRate = await ChargeRate.create({
@@ -17,6 +18,13 @@ exports.getChargeRates = catchAsync(async (req, res, next) => {
         'Charge Rates Retrieved Successfully!', chargeRates);
 });
 
-exports.seeChargeRate = catchAsync(async (req, res, next) => {
+exports.findChargeRate = catchAsync(async (req, res, next) => {
     const chargeRate = await ChargeRate.findById(req.params.id);
+    if (!chargeRate) return next(new AppError('Charge Rate Not Found!', 404));
+    req.chargeRate = chargeRate;
+    return next();
 });
+
+exports.seeChargeRate = (req, res, next) => {
+    return success(res, 200, 'success', 'Retrieved Charge Rate!', req.chargeRate);
+}

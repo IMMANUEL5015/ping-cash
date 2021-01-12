@@ -13,4 +13,9 @@ router.get('/:id',
     chargeRate.seeChargeRate
 );
 
+router.patch('/:id',
+    chargeRate.findChargeRate,
+    chargeRate.updateChargeRate
+);
+
 module.exports = router;

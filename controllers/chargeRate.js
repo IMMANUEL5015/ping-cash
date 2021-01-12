@@ -28,3 +28,9 @@ exports.findChargeRate = catchAsync(async (req, res, next) => {
 exports.seeChargeRate = (req, res, next) => {
     return success(res, 200, 'success', 'Retrieved Charge Rate!', req.chargeRate);
 }
+
+exports.updateChargeRate = catchAsync(async (req, res, next) => {
+    const chargeRate = await ChargeRate.findByIdAndUpdate(req.params.id,
+        { ...req.body }, { new: true });
+    return success(res, 200, 'success', 'Updated Charge Rate!', chargeRate);
+});

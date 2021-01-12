@@ -42,16 +42,13 @@ const transactionSchema = mongoose.Schema({
         default: 'pending'
     },
     charges: {
-        type: String,
-        required: [true, 'There must be charges for every transaction.']
+        type: String
     },
     finalAmountPaid: {
-        type: String,
-        required: [true, 'What is the actual amount paid by the sender?']
+        type: String
     },
     finalAmountReceived: {
-        type: String,
-        required: [true, 'What is the actual amount to be received?']
+        type: String
     },
     createdAt: {
         type: Date,
@@ -103,7 +100,7 @@ transactionSchema.pre('save', async function (next) {
 
     //Calculate the finalAmountPaid
     if (!this.chargeReceiverTheCommission) {
-        this.finalAmountPaid = this.amount + this.charges;
+        this.finalAmountPaid = Number(this.amount) + Number(this.charges);
     } else {
         this.finalAmountPaid = this.amount;
     }

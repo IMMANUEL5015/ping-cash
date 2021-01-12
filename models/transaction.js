@@ -108,6 +108,13 @@ transactionSchema.pre('save', async function (next) {
         this.finalAmountPaid = this.amount;
     }
 
+    //Calculate the finalAmountReceived
+    if (!this.chargeReceiverTheCommission) {
+        this.finalAmountReceived = this.amount;
+    } else {
+        this.finalAmountReceived = this.amount - this.charges;
+    }
+
     next();
 });
 

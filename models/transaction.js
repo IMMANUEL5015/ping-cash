@@ -38,7 +38,7 @@ const transactionSchema = mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['pending', 'cancelled', 'refunded', 'received'],
+        enum: ['pending', 'paid', 'cancelled', 'refunded', 'received'],
         default: 'pending'
     },
     charges: {
@@ -59,11 +59,24 @@ const transactionSchema = mongoose.Schema({
     },
     country: {
         type: String,
-        required: [true, 'Please specify the country you are sending money from.']
+        required: [true, 'Please specify the country you are sending money from.'],
+        enum: [
+            'Australia', 'Austria', 'Belgium', 'Bulgaria', 'Canada', 'Cyprus', 'Czech Republic',
+            'Denmark', 'Estonia', 'Finland', 'France', 'Germany', 'Greece', 'Hong Kong',
+            'Ireland', 'Italy', 'Japan', 'Latvia', 'Lithuania', 'Luxemborg', 'Malta',
+            'Mexico', 'Netherlands', 'New Zealand', 'Nigeria', 'Norway', 'Poland', 'Portugal',
+            'Romania', 'Singapore', 'Slovakia', 'Slovenia', 'Spain', 'Sweden', 'Switzerland',
+            'United Kingdom', 'United States'
+        ]
     },
     currency: {
         type: String,
-        required: [true, 'Please specify the currency you are using to make the payment.']
+        required: [true, 'Please specify the currency you are using to make the payment.'],
+        enum: [
+            'aud', 'brl', 'gbp', 'n', 'bgn', 'cad', 'czk', 'dkk', 'eur', 'hkd', 'huf', 'ils',
+            'jpy', 'myr', 'mxn', 'twd', 'nzd', 'nok', 'php', 'pln', 'ron', 'rub', 'sgd', 'sek',
+            'chf', 'thb', 'usd'
+        ]
     },
     chargeRate: {
         type: mongoose.Schema.Types.ObjectId,

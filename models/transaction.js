@@ -119,4 +119,9 @@ transactionSchema.pre('save', async function (next) {
     next();
 });
 
+transactionSchema.pre(/^findOne/, function (next) {
+    this.populate('currencyId');
+    next();
+});
+
 module.exports = mongoose.model('Transaction', transactionSchema);

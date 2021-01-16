@@ -1,6 +1,9 @@
 const Transaction = require('../models/transaction');
 const randomString = require('random-string');
 const catchAsync = require('../utils/catchAsync');
+const AppError = require('../utils/appError');
+const Stripe = require('stripe');
+const stripe = Stripe(process.env.STRIPE_TEST_SECRET);
 
 exports.initializeTransaction = catchAsync(async (req, res, next) => {
     const uniqueString = randomString({ length: 6, numeric: true });
@@ -27,3 +30,32 @@ exports.initializeTransaction = catchAsync(async (req, res, next) => {
     });
 });
 
+exports.findTransaction = catchAsync(async (req, res, next) => {
+    const transaction = await Transaction.findOne({
+        reference: req.params.ref
+    });
+
+    if (!transaction) return next(new AppError('Transaction not found!', 404));
+    req.transaction = transaction;
+    return next();
+});
+
+exports.checkIfTransactionIsPending = catchAsync(async (req, res, next) => {
+    const { transaction } = req;
+    if (transaction.status !== 'pending') return next(new AppError('This transaction is no longer pending.'));
+    return next();
+});
+
+exports.makePayment = catchAsync(async (req, res, next) => {
+    const { transaction } = req;
+    const paymentIntent = await stripe.paymentIntents.create({
+        amount: Number(transaction.finalAmountPaid),
+        currency: transaction.currencyId.abbreviation,
+        metadata: { integration_check: 'accept_a_payment' },
+    });
+
+    return res.status(200).json({
+        status: 'Success',
+        client_secret: paymentIntent.client_secret
+    })
+});;

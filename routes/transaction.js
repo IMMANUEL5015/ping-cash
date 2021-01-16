@@ -9,4 +9,10 @@ router.post('/',
     transaction.initializeTransaction
 );
 
+router.get('/:ref/payment-to-stripe',
+    transaction.findTransaction,
+    transaction.checkIfTransactionIsPending,
+    transaction.makePayment
+);
+
 module.exports = router;

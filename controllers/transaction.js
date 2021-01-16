@@ -17,7 +17,8 @@ exports.initializeTransaction = catchAsync(async (req, res, next) => {
         amount: req.body.amount,
         chargeReceiverTheCommission: req.body.chargeReceiverTheCommission,
         country: req.body.country,
-        currency: req.body.currency
+        currency: req.body.currency,
+        currencyId: req.body.currencyId
     });
 
     return res.status(201).json({

@@ -1,0 +1,12 @@
+[
+    {
+        "name": "to-nigeria",
+        "flatOrPercentage": "percent",
+        "figure": "3.5"
+    },
+    {
+        "name": "within-nigeria",
+        "flatOrPercentage": "flat",
+        "figure": "35"
+    }
+]

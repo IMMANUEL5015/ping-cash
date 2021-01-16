@@ -1,0 +1,106 @@
+[
+    {
+        "name": "Australian Dollar",
+        "abbreviation": "aud"
+    },
+    {
+        "name": "Brazilian Real",
+        "abbreviation": "brl"
+    },
+    {
+        "name": "British Pound",
+        "abbreviation": "gbp"
+    },
+    {
+        "name": "Bulgarian Lev",
+        "abbreviation": "bgn"
+    },
+    {
+        "name": "Canadian Dollar",
+        "abbreviation": "cad"
+    },
+    {
+        "name": "Czech Koruna",
+        "abbreviation": "czk"
+    },
+    {
+        "name": "Danish Krone",
+        "abbreviation": "dkk"
+    },
+    {
+        "name": "Euro",
+        "abbreviation": "eur"
+    },
+    {
+        "name": "Hong Kong Dollar",
+        "abbreviation": "hkd"
+    },
+    {
+        "name": "Hungarian Forint",
+        "abbreviation": "huf"
+    },
+    {
+        "name": "Israeli New Sheqel",
+        "abbreviation": "ils"
+    },
+    {
+        "name": "Japanese Yen",
+        "abbreviation": "jpy"
+    },
+    {
+        "name": "Malaysian Ringgit",
+        "abbreviation": "myr"
+    },
+    {
+        "name": "Mexican Peso",
+        "abbreviation": "mxn"
+    },
+    {
+        "name": "New Taiwan Dollar",
+        "abbreviation": "twd"
+    },
+    {
+        "name": "New Zealand Dollar",
+        "abbreviation": "nzd"
+    },
+    {
+        "name": "Philippine Peso,",
+        "abbreviation": "php"
+    },
+    {
+        "name": "Polish Złoty",
+        "abbreviation": "pln"
+    },
+    {
+        "name": "Romania Leu",
+        "abbreviation": "ron"
+    },
+    {
+        "name": "Russian Ruble",
+        "abbreviation": "rub"
+    },
+    {
+        "name": "Singapore Dollar",
+        "abbreviation": "sgd"
+    },
+    {
+        "name": "Swedish Krona",
+        "abbreviation": "sek"
+    },
+    {
+        "name": "Swiss Franc",
+        "abbreviation": "chf"
+    },
+    {
+        "name": "Thai Baht",
+        "abbreviation": "thb"
+    },
+    {
+        "name": "United States Dollar",
+        "abbreviation": "usd"
+    },
+    {
+        "name": "Naira",
+        "abbreviation": "n"
+    }
+]

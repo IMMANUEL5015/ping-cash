@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 const PORT = process.env.PORT;
 const transactionRouter = require('./routes/transaction');
 const chargeRateRouter = require('./routes/chargeRate');
+const currencyRouter = require('./routes/currency');
 const cors = require('cors');
 const globalErrorHandler = require('./utils/globalErrorHandler');
 
@@ -23,6 +24,7 @@ app.use(express.json());
 
 app.use('/transactions', transactionRouter);
 app.use('/charge-rates', chargeRateRouter);
+app.use('/currencies', currencyRouter);
 
 app.all('*', (req, res) => {
     res.status(404).json({

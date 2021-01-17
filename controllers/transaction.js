@@ -4,6 +4,7 @@ const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_TEST_SECRET);
+const axios = require('axios');
 
 exports.initializeTransaction = catchAsync(async (req, res, next) => {
     const uniqueString = randomString({ length: 6, numeric: true });
@@ -82,10 +83,43 @@ exports.verifyStripePayment = catchAsync(async (req, res, next) => {
                 { new: true }
             );
 
-            //Generate USSD Code
+            //Initiate Transfer and Generate USSD Code
+            const url = 'https://api.fusbeast.com/v1/MobileTransfer/Initiate';
+            const response = await axios.post(url, {
+                webhook_secret: process.env.WEBHOOK_SECRET,
+                reference: /*transaction.reference*/'PNG-12333eq',
+                mobile_no: /*transaction.receiverPhoneNumber*/'09064058820',
+                merchant_id: process.env.MERCHANT_ID,
+                webhook_url: process.env.WEBHOOK_URL
+            }, {
+                    headers: {
+                        Authorization: `Bearer ${process.env.MERCHANT_SECRET}`
+                    }
+                }
+            );
+            const data = response.data;
+            const ussd = data.ussd;
+            console.log(data);
+            // if (data.success && data.message === 'Successful') {
+            //     const authorize_url = "https://api.fusbeast.com/v1/MobileTransfer/Authorize";
 
-            //Send USSD code to receiver
-            console.log(transaction);
+            //     //Authorize Transfer and Send USSD Code
+            //     const response = await axios.post(authorize_url, {
+
+            //     },
+            //         {
+            //             headers: {
+            //                 Authorization: `Bearer ${process.env.MERCHANT_SECRET}`
+            //             }
+            //         }
+            //     )
+            // }
         }
     }
+});
+
+exports.authorizeTransfer = catchAsync(async (req, res, next) => {
+    //Send USSD code to receiver
+    console.log(req);
+    console.log(res);
 });

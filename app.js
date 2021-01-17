@@ -24,7 +24,13 @@ app.post('/transactions/verify-payment/stripe',
     transaction.verifyStripePayment
 );
 
+
 app.use(express.json());
+
+app.post('/transactions/initiate_transfer',
+    transaction.authorizeTransfer
+);
+
 app.use(router);
 
 module.exports = app;

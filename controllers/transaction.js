@@ -5,6 +5,8 @@ const AppError = require('../utils/appError');
 const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_TEST_SECRET);
 const axios = require('axios');
+const Sms = require('../models/sms');
+const sendSms = require('../utils/sms');
 
 const customerId = process.env.TELESIGN_CUSTOMER_ID;
 const apiKey = process.env.TELESIGN_API_KEY;
@@ -88,7 +90,7 @@ exports.verifyStripePayment = catchAsync(async (req, res, next) => {
                 { new: true }
             );
 
-            //Initiate Transfer, Generate and Send USSD Code
+            //Initiate Transfer and Generate USSD Code
             const url = 'https://api.fusbeast.com/v1/MobileTransfer/Initiate';
             const response = await axios.post(url, {
                 webhook_secret: process.env.WEBHOOK_SECRET,
@@ -102,6 +104,36 @@ exports.verifyStripePayment = catchAsync(async (req, res, next) => {
                     }
                 }
             );
+
+            //Send USSD Code
+            const ussd = response.data.ussd;
+            const smsService = await Sms.findOne({ active: true });
+            if (smsService) {
+                if (smsService.name === 'Twilio') {
+                    const phoneNumber = "+234" + transaction.receiverPhoneNumber.slice(1, 11);
+                    const body = `${transaction.finalAmountReceived} ${transaction.currency} has been pinged to your phone number. Utilize the USSD code and follow it's instructions to claim the pinged cash. ${ussd}`;
+                    await sendSms.sendWithTwilio(body, phoneNumber);
+                }
+
+                if (smsService.name === 'Telesign') {
+                    const message = `${transaction.finalAmountReceived} ${transaction.currency} has been pinged to your phone number. Utilize the USSD code and follow it's instructions to claim the pinged cash. ${ussd}`;
+                    const messageCallback = function messageCallback(error, responseBody) {
+                        if (error === null) {
+                            console.log('Telesign Messaging Successful.')
+                        } else {
+                            console.error('Error in Telesign Messaging');
+                        }
+                    }
+
+                    const phoneNumber = "+234" + transaction.receiverPhoneNumber.slice(1, 11);
+                    await sendSms.sendWithTelesign(customerId, apiKey, rest_endpoint, timeout, phoneNumber, message, 'ARN', messageCallback);
+                }
+
+                if (smsService.name === 'Termii') {
+                    const sms = `${transaction.finalAmountReceived} ${transaction.currency} has been pinged to your phone number. Utilize the USSD code and follow it's instructions to claim the pinged cash. ${ussd}`;                    
+                    await sendSms.sendWithTermi(transaction.receiverPhoneNumber, sms);
+                }
+            }
         }
     }
 });

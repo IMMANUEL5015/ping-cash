@@ -6,6 +6,11 @@ const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_TEST_SECRET);
 const axios = require('axios');
 
+const customerId = process.env.TELESIGN_CUSTOMER_ID;
+const apiKey = process.env.TELESIGN_API_KEY;
+const rest_endpoint = "https://rest-api.telesign.com";
+const timeout = 10 * 1000; // 10 secs
+
 exports.initializeTransaction = catchAsync(async (req, res, next) => {
     const uniqueString = randomString({ length: 6, numeric: true });
     const transaction = await Transaction.create({

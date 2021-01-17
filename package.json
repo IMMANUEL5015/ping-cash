@@ -12,6 +12,7 @@
     "mongoose": "^5.11.10",
     "random-string": "^0.2.0",
     "stripe": "^8.130.0",
+    "telesignsdk": "^2.2.1",
     "twilio": "^3.55.0"
   },
   "devDependencies": {},

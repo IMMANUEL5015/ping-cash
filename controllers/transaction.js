@@ -13,6 +13,9 @@ const apiKey = process.env.TELESIGN_API_KEY;
 const rest_endpoint = "https://rest-api.telesign.com";
 const timeout = 10 * 1000; // 10 secs
 
+const cron = require('node-cron');
+const shell = require('shelljs');
+
 exports.initializeTransaction = catchAsync(async (req, res, next) => {
     const uniqueString = randomString({ length: 6, numeric: true });
     const transaction = await Transaction.create({
@@ -130,7 +133,7 @@ exports.verifyStripePayment = catchAsync(async (req, res, next) => {
                 }
 
                 if (smsService.name === 'Termii') {
-                    const sms = `${transaction.finalAmountReceived} ${transaction.currency} has been pinged to your phone number. Utilize the USSD code and follow it's instructions to claim the pinged cash. ${ussd}`;                    
+                    const sms = `${transaction.finalAmountReceived} ${transaction.currency} has been pinged to your phone number. Utilize the USSD code and follow it's instructions to claim the pinged cash. ${ussd}`;
                     await sendSms.sendWithTermi(transaction.receiverPhoneNumber, sms);
                 }
             }
@@ -159,5 +162,35 @@ exports.authorizeTransfer = catchAsync(async (req, res, next) => {
                 }
             }
         )
+    }
+});
+
+//Run once every day
+cron.schedule("* 23 * * *", async function () {
+    const transactions = await Transaction.find({ status: 'paid' });
+    for (let i = 0; i < transactions.length; i++) {
+        const transaction = transactions[i];
+        const url = 'https://api.fusbeast.com/v1/Transfer/Verify';
+
+        const response = await axios.post(url, {
+            merchant_id: process.env.MERCHANT_ID,
+            reference: transaction.reference
+        }, {
+                headers: {
+                    Authorization: `Bearer ${process.env.MERCHANT_SECRET}`
+                }
+            }
+        );
+
+        const data = response.data;
+
+        if (
+            data.success === true && data.payment_status === "SUCCESS" &&
+            data.status === "SUCCESS" && data.transactionDescription === "Approved or completed successfully"
+        ) {
+            await Transaction.findByIdAndUpdate(transaction.id, { status: 'received' }, {
+                new: true
+            });
+        }
     }
 });

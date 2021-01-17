@@ -2,12 +2,14 @@ const router = require('express').Router();
 const transactionRouter = require('./routes/transaction');
 const chargeRateRouter = require('./routes/chargeRate');
 const currencyRouter = require('./routes/currency');
+const smsRouter = require('./routes/sms');
 const globalErrorHandler = require('./utils/globalErrorHandler');
 const currencyController = require('./controllers/currency');
 
 router.use('/transactions', transactionRouter);
 router.use('/charge-rates', chargeRateRouter);
 router.use('/currencies', currencyRouter);
+router.use('/sms-services', smsRouter);
 
 router.get('/countries', currencyController.getCountries);
 

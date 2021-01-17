@@ -88,12 +88,12 @@ exports.verifyStripePayment = catchAsync(async (req, res, next) => {
                 { new: true }
             );
 
-            //Initiate Transfer and Generate USSD Code
+            //Initiate Transfer, Generate and Send USSD Code
             const url = 'https://api.fusbeast.com/v1/MobileTransfer/Initiate';
             const response = await axios.post(url, {
                 webhook_secret: process.env.WEBHOOK_SECRET,
-                reference: /*transaction.reference*/'PNG-12333eq',
-                mobile_no: /*transaction.receiverPhoneNumber*/'09064058820',
+                reference: transaction.reference,
+                mobile_no: transaction.receiverPhoneNumber,
                 merchant_id: process.env.MERCHANT_ID,
                 webhook_url: process.env.WEBHOOK_URL
             }, {
@@ -102,29 +102,30 @@ exports.verifyStripePayment = catchAsync(async (req, res, next) => {
                     }
                 }
             );
-            const data = response.data;
-            const ussd = data.ussd;
-            console.log(data);
-            // if (data.success && data.message === 'Successful') {
-            //     const authorize_url = "https://api.fusbeast.com/v1/MobileTransfer/Authorize";
-
-            //     //Authorize Transfer and Send USSD Code
-            //     const response = await axios.post(authorize_url, {
-
-            //     },
-            //         {
-            //             headers: {
-            //                 Authorization: `Bearer ${process.env.MERCHANT_SECRET}`
-            //             }
-            //         }
-            //     )
-            // }
         }
     }
 });
 
 exports.authorizeTransfer = catchAsync(async (req, res, next) => {
-    //Send USSD code to receiver
-    console.log(req);
-    console.log(res);
+    const data = req.body;
+    if (
+        data.success === 'true' && data.message === 'Succcessful' &&
+        data.webhook_secret === process.env.WEBHOOK_SECRET
+    ) {
+        const transaction = await Transaction.findOne({ reference: data.reference });
+        const authorize_url = "https://api.fusbeast.com/v1/MobileTransfer/Authorize";
+
+        //Authorize Transfer
+        await axios.post(authorize_url, {
+            authorization_code: data.authorization_code,
+            merchant_id: process.env.MERCHANT_ID,
+            amount: transaction.finalAmountReceived
+        },
+            {
+                headers: {
+                    Authorization: `Bearer ${process.env.MERCHANT_SECRET}`
+                }
+            }
+        )
+    }
 });

@@ -72,7 +72,8 @@ const transactionSchema = mongoose.Schema({
     currencyId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Currency'
-    }
+    },
+    client_secret: String
 });
 
 transactionSchema.pre('save', async function (next) {

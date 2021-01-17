@@ -40,3 +40,8 @@ exports.setToNigeria = catchAsync(async (req, res, next) => {
     return next();
 });
 
+exports.ensureReceiverIsNigerian = (req, res, next) => {
+    if (req.body.receiverPhoneNumber) return next(new AppError('Receiver phone number is required!', 400));
+    if (req.body.receiverPhoneNumber.startsWith('+234')) return next();
+    return next(new AppError('You can only ping money to a Nigerian.', 400));
+}

@@ -54,8 +54,38 @@ exports.makePayment = catchAsync(async (req, res, next) => {
         metadata: { integration_check: 'accept_a_payment' },
     });
 
+    await Transaction.findByIdAndUpdate(
+        transaction.id,
+        { client_secret: paymentIntent.client_secret },
+        { new: true }
+    );
+
     return res.status(200).json({
         status: 'Success',
-        client_secret: paymentIntent.client_secret
+        client_secret: paymentIntent.client_secret,
+        name: transaction.senderFullName
     })
-});;
+});
+
+exports.verifyStripePayment = catchAsync(async (req, res, next) => {
+    const sig = req.headers['stripe-signature'];
+
+    let event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    // Handle the event
+    if (event && event.type === 'payment_intent.succeeded') {
+        const paymentIntent = event.data.object;
+        if (paymentIntent.status === 'succeeded') {
+            res.status(200).json();
+            const transaction = await Transaction.findOneAndUpdate(
+                { client_secret: paymentIntent.client_secret },
+                { status: 'paid' },
+                { new: true }
+            );
+
+            //Generate USSD Code
+
+            //Send USSD code to receiver
+            console.log(transaction);
+        }
+    }
+});

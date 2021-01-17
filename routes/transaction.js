@@ -1,11 +1,13 @@
 const router = require('express').Router();
 const transaction = require('../controllers/transaction');
-const { checkTransactionType, setForNigeria, setToNigeria } = require('../middlewares/transaction');
+const { checkTransactionType, setForNigeria,
+    setToNigeria, ensureReceiverIsNigerian } = require('../middlewares/transaction');
 
 router.post('/',
     checkTransactionType,
     setForNigeria,
     setToNigeria,
+    ensureReceiverIsNigerian,
     transaction.initializeTransaction
 );
 

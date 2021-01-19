@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 const ChargeRate = require('../models/chargerate');
+const CreditRate = require('../models/creditrate');
+const axios = require('axios');
 
 const transactionSchema = mongoose.Schema({
     transactionType: {
@@ -50,6 +52,9 @@ const transactionSchema = mongoose.Schema({
     finalAmountReceived: {
         type: String
     },
+    finalAmountReceivedInNaira: {
+        type: String
+    },
     createdAt: {
         type: Date,
         default: Date.now
@@ -73,7 +78,8 @@ const transactionSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Currency'
     },
-    client_secret: String
+    client_secret: String,
+    exchangeRate: String
 });
 
 transactionSchema.pre('save', async function (next) {
@@ -115,6 +121,38 @@ transactionSchema.pre('save', async function (next) {
         this.finalAmountReceived = this.amount;
     } else {
         this.finalAmountReceived = this.amount - this.charges;
+    }
+
+    //Calculate finalAmountReceivedInNaira
+    if (this.transactionType === 'send-within-nigeria') {
+        this.finalAmountReceivedInNaira = this.finalAmountReceived;
+    }
+
+    if (this.transactionType === 'send-to-nigeria') {
+        //Know the currency in use
+        let currencyInUse = this.currencyId.abbreviation;
+
+        currencyInUse = currencyInUse.toUpperCase();
+
+        let currentCreditRate = await CreditRate.findOne({ name: 'credit-rate' });
+        currentCreditRate = Number(currentCreditRate.figure);
+
+        const url = `http://api.currencylayer.com/live?access_key=${process.env.CURRENCY_CONVERTER_API_KEY}`;
+        const response = await axios.get(url);
+        const data = response.data;
+        const quotes = data.quotes;
+        let dollarInNaira = quotes.USDNGN;
+
+        let exchangeRate
+        //Convert it to Naira based on the credit rate
+        exchangeRate = (currentCreditRate / 100) * dollarInNaira;
+        exchangeRate = exchangeRate + dollarInNaira;
+
+        //Set the exchange rate that was used for the transaction
+        this.exchangeRate = exchangeRate;
+
+        //Set the finalAmountReceivedInNaira
+        this.finalAmountReceivedInNaira = (this.exchangeRate * this.finalAmountReceived);
     }
 
     next();

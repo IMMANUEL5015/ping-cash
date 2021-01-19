@@ -31,6 +31,7 @@ exports.setToNigeria = catchAsync(async (req, res, next) => {
         const foundCountry = await Country.findOne({ name: country });
         if (!foundCountry) return next(new AppError('We cannot accept payments from the country you specified!', 404));
 
+        //Later on, remove all the currencies in the database, except USD
         const foundCurrency = await Currency.findOne({ name: currency });
         if (!foundCurrency) return next(new AppError('Currency not supported currently!', 404));
 

@@ -79,6 +79,7 @@ exports.makePayment = catchAsync(async (req, res, next) => {
 });
 
 exports.verifyStripePayment = catchAsync(async (req, res, next) => {
+    //Later on, check for and fix the reason for the async error that occured earlier
     const sig = req.headers['stripe-signature'];
 
     let event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
@@ -110,6 +111,7 @@ exports.verifyStripePayment = catchAsync(async (req, res, next) => {
 
             //Send USSD Code
             const ussd = response.data.ussd;
+            //Later on, the message being sent might need to be adjusted.
             const smsService = await Sms.findOne({ active: true });
             if (smsService) {
                 if (smsService.name === 'Twilio') {
@@ -133,6 +135,7 @@ exports.verifyStripePayment = catchAsync(async (req, res, next) => {
                 }
 
                 if (smsService.name === 'Termii') {
+                    //Later on, ensure that Termii works fine
                     const sms = `${transaction.finalAmountReceived} ${transaction.currency} has been pinged to your phone number. Utilize the USSD code and follow it's instructions to claim the pinged cash. ${ussd}`;
                     await sendSms.sendWithTermi(transaction.receiverPhoneNumber, sms);
                 }
@@ -154,7 +157,7 @@ exports.authorizeTransfer = catchAsync(async (req, res, next) => {
         await axios.post(authorize_url, {
             authorization_code: data.authorization_code,
             merchant_id: process.env.MERCHANT_ID,
-            amount: transaction.finalAmountReceived
+            amount: transaction.finalAmountReceivedInNaira //Later on, approx to two decimals.
         },
             {
                 headers: {
@@ -167,6 +170,7 @@ exports.authorizeTransfer = catchAsync(async (req, res, next) => {
 
 //Run once every day
 cron.schedule("* 23 * * *", async function () {
+    //Later on, ensure that errors don't prevent the cron's continuation
     const transactions = await Transaction.find({ status: 'paid' });
     for (let i = 0; i < transactions.length; i++) {
         const transaction = transactions[i];

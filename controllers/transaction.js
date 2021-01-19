@@ -14,12 +14,11 @@ const rest_endpoint = "https://rest-api.telesign.com";
 const timeout = 10 * 1000; // 10 secs
 
 const cron = require('node-cron');
-const shell = require('shelljs');
 
 exports.initializeTransaction = catchAsync(async (req, res, next) => {
     const uniqueString = randomString({ length: 6, numeric: true });
     const transaction = await Transaction.create({
-        reference: `PNG-${uniqueString}eq`,
+        reference: `PNG-${uniqueString}eq`, //Increase length of unique string
         transactionType: req.body.transactionType,
         senderFullName: req.body.senderFullName,
         senderPhoneNumber: req.body.senderPhoneNumber,

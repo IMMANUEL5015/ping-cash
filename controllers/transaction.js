@@ -75,8 +75,9 @@ exports.ensureTransactionIsFromNigeria = catchAsync(async (req, res, next) => {
 
 exports.makePayment = catchAsync(async (req, res, next) => {
     const { transaction } = req;
+    //Convert cents to dollars
     const paymentIntent = await stripe.paymentIntents.create({
-        amount: Number(transaction.finalAmountPaid),
+        amount: Number(transaction.finalAmountPaid + "00"),
         currency: transaction.currencyId.abbreviation,
         metadata: { integration_check: 'accept_a_payment' },
     });
@@ -127,8 +128,7 @@ exports.verifyStripePayment = catchAsync(async (req, res, next) => {
             //Send USSD Code
             const ussd = response.data.ussd;
             const smsService = await Sms.findOne({ active: true });
-            const messageToBeSent = `Dear ${transaction.receiverFullName}. `;
-            `Hello . This message is from PingCash. ${transaction.finalAmountReceived} ${transaction.currency} have been pinged to your phone number. Dial the USSD code and follow it's instructions. ${ussd}`;
+            const messageToBeSent = `Dear ${transaction.receiverFullName}. ${transaction.senderFullName} has pinged you ${Math.round(Number(transaction.finalAmountReceivedInNaira))} Naira. Time: ${new Date(Date.now()).toLocaleTimeString()}. Ref: ${transaction.reference}. Dial ${ussd} to withdraw your money. Fuspay Technology.`;
             if (smsService) {
                 if (smsService.name === 'Twilio') {
                     const phoneNumber = "+234" + transaction.receiverPhoneNumber.slice(1, 11);
@@ -172,7 +172,7 @@ exports.authorizeTransfer = catchAsync(async (req, res, next) => {
         await axios.post(authorize_url, {
             authorization_code: data.authorization_code,
             merchant_id: process.env.MERCHANT_ID,
-            amount: transaction.finalAmountReceivedInNaira //Later on, approx.
+            amount: `${Math.round(Number(transaction.finalAmountReceivedInNaira))}`
         },
             {
                 headers: {
@@ -183,33 +183,35 @@ exports.authorizeTransfer = catchAsync(async (req, res, next) => {
     }
 });
 
-//Run once every day
-cron.schedule("* 23 * * *", async function () {
-    //Later on, ensure that errors don't prevent the cron's continuation
+//Verify paid transactions at 11:59pm every day.
+cron.schedule('59 23 * * *', async () => {
     const transactions = await Transaction.find({ status: 'paid' });
     for (let i = 0; i < transactions.length; i++) {
         const transaction = transactions[i];
+
         const url = 'https://api.fusbeast.com/v1/Transfer/Verify';
 
-        const response = await axios.post(url, {
-            merchant_id: process.env.MERCHANT_ID,
-            reference: transaction.reference
-        }, {
-                headers: {
-                    Authorization: `Bearer ${process.env.MERCHANT_SECRET}`
+        if (transaction) {
+            const response = await axios.post(url, {
+                merchant_id: process.env.MERCHANT_ID,
+                reference: transaction.reference
+            }, {
+                    headers: {
+                        Authorization: `Bearer ${process.env.MERCHANT_SECRET}`
+                    }
                 }
+            );
+
+            const data = response.data;
+
+            if (
+                data.success === true && data.payment_status === "SUCCESS" &&
+                data.status === "SUCCESS" && data.transactionDescription === "Approved or completed successfully"
+            ) {
+                await Transaction.findByIdAndUpdate(transaction.id, { status: 'received' }, {
+                    new: true
+                });
             }
-        );
-
-        const data = response.data;
-
-        if (
-            data.success === true && data.payment_status === "SUCCESS" &&
-            data.status === "SUCCESS" && data.transactionDescription === "Approved or completed successfully"
-        ) {
-            await Transaction.findByIdAndUpdate(transaction.id, { status: 'received' }, {
-                new: true
-            });
         }
     }
 });

@@ -23,7 +23,7 @@ exports.setForNigeria = catchAsync(async (req, res, next) => {
 });
 
 exports.setToNigeria = catchAsync(async (req, res, next) => {
-    const { transactionType, country, currency, senderEmailAddress } = req.body;
+    const { transactionType, country, currency, senderEmailAddress, amount } = req.body;
     if (transactionType === "send-to-nigeria") {
         if (!country) return next(new AppError('Please specify the country you are sending money from.', 400));
         if (!currency) return next(new AppError("Please specify the currency you want to use to send money.", 400));
@@ -36,7 +36,9 @@ exports.setToNigeria = catchAsync(async (req, res, next) => {
 
         req.body.currencyId = foundCurrency;
 
-        if(!senderEmailAddress) return next(new AppError('Please specify your email address.', 400));
+        if (!senderEmailAddress) return next(new AppError('Please specify your email address.', 400));
+
+        if (amount && amount.includes('.')) return next(new AppError('Currently, we only accept money in whole number values, not decimals.', 400));
     }
 
     return next();

@@ -129,6 +129,7 @@ transactionSchema.pre('save', async function (next) {
     //Calculate finalAmountReceivedInNaira
     if (this.transactionType === 'send-within-nigeria') {
         this.finalAmountReceivedInNaira = this.finalAmountReceived;
+        this.exchangeRate = 1;
     }
 
     if (this.transactionType === 'send-to-nigeria') {

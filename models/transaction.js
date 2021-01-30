@@ -17,6 +17,9 @@ const transactionSchema = mongoose.Schema({
         type: String,
         required: [true, 'Please provide your phone number.']
     },
+    senderEmailAddress: {
+        type: String
+    },
     accountNumberForRefund: String,
     bankForRefund: String,
     bankSortCode: String,

@@ -16,12 +16,13 @@ const timeout = 10 * 1000; // 10 secs
 const cron = require('node-cron');
 
 exports.initializeTransaction = catchAsync(async (req, res, next) => {
-    const uniqueString = randomString({ length: 6, numeric: true });
+    const uniqueString = randomString({ length: 26, numeric: true });
     const transaction = await Transaction.create({
-        reference: `PNG-${uniqueString}eq`, //Increase length of unique string
+        reference: `PNG-${uniqueString}eq`,
         transactionType: req.body.transactionType,
         senderFullName: req.body.senderFullName,
         senderPhoneNumber: req.body.senderPhoneNumber,
+        senderEmailAddress: req.body.senderEmailAddress,
         accountNumberForRefund: req.body.accountNumberForRefund,
         bankForRefund: req.body.bankForRefund,
         bankSortCode: req.body.bankSortCode,
@@ -56,6 +57,22 @@ exports.checkIfTransactionIsPending = catchAsync(async (req, res, next) => {
     return next();
 });
 
+exports.ensureTransactionIsFromAbroad = catchAsync(async (req, res, next) => {
+    const { transaction } = req;
+    if (transaction.transactionType !== 'send-to-nigeria') {
+        return next(new AppError('This transaction must originate from outside Nigeria.'));
+    }
+    return next();
+});
+
+exports.ensureTransactionIsFromNigeria = catchAsync(async (req, res, next) => {
+    const { transaction } = req;
+    if (transaction.transactionType !== 'send-within-nigeria') {
+        return next(new AppError('This transaction must originate from within Nigeria.'));
+    }
+    return next();
+});
+
 exports.makePayment = catchAsync(async (req, res, next) => {
     const { transaction } = req;
     const paymentIntent = await stripe.paymentIntents.create({
@@ -78,7 +95,6 @@ exports.makePayment = catchAsync(async (req, res, next) => {
 });
 
 exports.verifyStripePayment = catchAsync(async (req, res, next) => {
-    //Later on, check for and fix the reason for the async error that occured earlier
     const sig = req.headers['stripe-signature'];
 
     let event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
@@ -110,17 +126,18 @@ exports.verifyStripePayment = catchAsync(async (req, res, next) => {
 
             //Send USSD Code
             const ussd = response.data.ussd;
-            //Later on, the message being sent might need to be adjusted.
             const smsService = await Sms.findOne({ active: true });
+            const messageToBeSent = `Dear ${transaction.receiverFullName}. `;
+            `Hello . This message is from PingCash. ${transaction.finalAmountReceived} ${transaction.currency} have been pinged to your phone number. Dial the USSD code and follow it's instructions. ${ussd}`;
             if (smsService) {
                 if (smsService.name === 'Twilio') {
                     const phoneNumber = "+234" + transaction.receiverPhoneNumber.slice(1, 11);
-                    const body = `${transaction.finalAmountReceived} ${transaction.currency} has been pinged to your phone number. Utilize the USSD code and follow it's instructions to claim the pinged cash. ${ussd}`;
+                    const body = messageToBeSent;
                     await sendSms.sendWithTwilio(body, phoneNumber);
                 }
 
                 if (smsService.name === 'Telesign') {
-                    const message = `${transaction.finalAmountReceived} ${transaction.currency} has been pinged to your phone number. Utilize the USSD code and follow it's instructions to claim the pinged cash. ${ussd}`;
+                    const message = messageToBeSent;
                     const messageCallback = function messageCallback(error, responseBody) {
                         if (error === null) {
                             console.log('Telesign Messaging Successful.')
@@ -134,8 +151,7 @@ exports.verifyStripePayment = catchAsync(async (req, res, next) => {
                 }
 
                 if (smsService.name === 'Termii') {
-                    //Later on, ensure that Termii works fine
-                    const sms = `${transaction.finalAmountReceived} ${transaction.currency} has been pinged to your phone number. Utilize the USSD code and follow it's instructions to claim the pinged cash. ${ussd}`;
+                    const sms = messageToBeSent;
                     await sendSms.sendWithTermi(transaction.receiverPhoneNumber, sms);
                 }
             }
@@ -156,7 +172,7 @@ exports.authorizeTransfer = catchAsync(async (req, res, next) => {
         await axios.post(authorize_url, {
             authorization_code: data.authorization_code,
             merchant_id: process.env.MERCHANT_ID,
-            amount: transaction.finalAmountReceivedInNaira //Later on, approx to two decimals.
+            amount: transaction.finalAmountReceivedInNaira //Later on, approx.
         },
             {
                 headers: {

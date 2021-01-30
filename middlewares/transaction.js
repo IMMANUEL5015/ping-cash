@@ -23,7 +23,7 @@ exports.setForNigeria = catchAsync(async (req, res, next) => {
 });
 
 exports.setToNigeria = catchAsync(async (req, res, next) => {
-    const { transactionType, country, currency } = req.body;
+    const { transactionType, country, currency, senderEmailAddress } = req.body;
     if (transactionType === "send-to-nigeria") {
         if (!country) return next(new AppError('Please specify the country you are sending money from.', 400));
         if (!currency) return next(new AppError("Please specify the currency you want to use to send money.", 400));
@@ -31,11 +31,12 @@ exports.setToNigeria = catchAsync(async (req, res, next) => {
         const foundCountry = await Country.findOne({ name: country });
         if (!foundCountry) return next(new AppError('We cannot accept payments from the country you specified!', 404));
 
-        //Later on, remove all the currencies in the database, except USD
         const foundCurrency = await Currency.findOne({ name: currency });
-        if (!foundCurrency) return next(new AppError('Currency not supported currently!', 404));
+        if (!foundCurrency) return next(new AppError('Only US dollars currency is currently supported.', 400));
 
         req.body.currencyId = foundCurrency;
+
+        if(!senderEmailAddress) return next(new AppError('Please specify your email address.', 400));
     }
 
     return next();

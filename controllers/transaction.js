@@ -152,7 +152,8 @@ exports.verifyStripePayment = catchAsync(async (req, res, next) => {
 
                 if (smsService.name === 'Termii') {
                     const sms = messageToBeSent;
-                    await sendSms.sendWithTermi(transaction.receiverPhoneNumber, sms);
+                    const phoneNumber = "+234" + transaction.receiverPhoneNumber.slice(1, 11);
+                    await sendSms.sendWithTermi(phoneNumber, sms);
                 }
             }
         }
@@ -211,6 +212,86 @@ cron.schedule('59 23 * * *', async () => {
                 await Transaction.findByIdAndUpdate(transaction.id, { status: 'received' }, {
                     new: true
                 });
+            }
+        }
+    }
+});
+
+exports.getCheckoutUrl = catchAsync(async (req, res, next) => {
+    const { transaction } = req;
+    const url = `https://api.fusbeast.com/checkout/${process.env.MERCHANT_ID}/create`;
+
+    const response = await axios.post(url, {
+        reference: transaction.reference,
+        checkout_type: 'DIRECT',
+        customer_email: transaction.senderEmailAddress,
+        amount: `${Math.round(Number(transaction.finalAmountPaid))}`,
+        callback_url: process.env.FUSPAY_CALLBACK_URL
+    });
+
+    return res.status(200).json({
+        status: 'Success',
+        url: response.data.url
+    });
+});
+
+exports.verifyFuspayPayment = catchAsync(async (req, res, next) => {
+    if (req.ip === process.env.FUSPAY_IP_ADDRESS) {
+        const data = req.query;
+        if (data.status === 'PAID' && data.code === '1') {
+            const { reference } = data;
+
+            const transaction = await Transaction.findOneAndUpdate(
+                { reference },
+                { status: 'paid' },
+                { new: true }
+            );
+
+            //Initiate Transfer and Generate USSD Code
+            const url = 'https://api.fusbeast.com/v1/MobileTransfer/Initiate';
+            const response = await axios.post(url, {
+                webhook_secret: process.env.WEBHOOK_SECRET,
+                reference: transaction.reference,
+                mobile_no: transaction.receiverPhoneNumber,
+                merchant_id: process.env.MERCHANT_ID,
+                webhook_url: process.env.WEBHOOK_URL
+            }, {
+                    headers: {
+                        Authorization: `Bearer ${process.env.MERCHANT_SECRET}`
+                    }
+                }
+            );
+
+            //Send USSD Code
+            const ussd = response.data.ussd;
+            const smsService = await Sms.findOne({ active: true });
+            const messageToBeSent = `Dear ${transaction.receiverFullName}. ${transaction.senderFullName} has pinged you ${Math.round(Number(transaction.finalAmountReceivedInNaira))} Naira. Time: ${new Date(Date.now()).toLocaleTimeString()}. Ref: ${transaction.reference}. Dial ${ussd} to withdraw your money. Fuspay Technology.`;
+            if (smsService) {
+                if (smsService.name === 'Twilio') {
+                    const phoneNumber = "+234" + transaction.receiverPhoneNumber.slice(1, 11);
+                    const body = messageToBeSent;
+                    await sendSms.sendWithTwilio(body, phoneNumber);
+                }
+
+                if (smsService.name === 'Telesign') {
+                    const message = messageToBeSent;
+                    const messageCallback = function messageCallback(error, responseBody) {
+                        if (error === null) {
+                            console.log('Telesign Messaging Successful.')
+                        } else {
+                            console.error('Error in Telesign Messaging');
+                        }
+                    }
+
+                    const phoneNumber = "+234" + transaction.receiverPhoneNumber.slice(1, 11);
+                    await sendSms.sendWithTelesign(customerId, apiKey, rest_endpoint, timeout, phoneNumber, message, 'ARN', messageCallback);
+                }
+
+                if (smsService.name === 'Termii') {
+                    const sms = messageToBeSent;
+                    const phoneNumber = "+234" + transaction.receiverPhoneNumber.slice(1, 11);
+                    await sendSms.sendWithTermi(phoneNumber, sms);
+                }
             }
         }
     }

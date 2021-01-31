@@ -36,8 +36,6 @@ exports.setToNigeria = catchAsync(async (req, res, next) => {
 
         req.body.currencyId = foundCurrency;
 
-        if (!senderEmailAddress) return next(new AppError('Please specify your email address.', 400));
-
         if (amount && amount.includes('.')) return next(new AppError('Currently, we only accept money in whole number values, not decimals.', 400));
     }
 

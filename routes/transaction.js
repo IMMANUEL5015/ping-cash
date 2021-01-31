@@ -22,21 +22,12 @@ router.get(
     '/:ref/payment-to-fuspay',
     transaction.findTransaction,
     transaction.checkIfTransactionIsPending,
-    transaction.ensureTransactionIsFromNigeria
+    transaction.ensureTransactionIsFromNigeria,
+    transaction.getCheckoutUrl
 );
 
-router.post(
-    '/fuspay/webhook_url',
-    (req, res, next) => {
-        console.log('POST, webhook', req.body);
-    }
-);
-
-router.post(
-    '/fuspay/callback_url',
-    (req, res, next) => {
-        console.log('POST, callback', req.body);
-    }
+router.get('/fuspay/callback_url',
+    transaction.verifyFuspayPayment
 );
 
 module.exports = router;

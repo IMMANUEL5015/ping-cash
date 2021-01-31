@@ -11,6 +11,10 @@ router.post('/',
     transaction.initializeTransaction
 );
 
+router.get('/:ref',
+    transaction.viewSpecificTransaction
+)
+
 router.get('/:ref/payment-to-stripe',
     transaction.findTransaction,
     transaction.checkIfTransactionIsPending,

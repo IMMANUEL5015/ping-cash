@@ -296,3 +296,13 @@ exports.verifyFuspayPayment = catchAsync(async (req, res, next) => {
         }
     }
 });
+
+exports.viewSpecificTransaction = catchAsync(async(req, res, next) => {
+    const transaction = await Transaction.findOne({
+        reference: req.params.ref
+    });
+
+    if(!transaction) return next(new AppError('Transaction not found!', 404));
+
+    return res.status(200).json({status: 'Success', transaction});
+});

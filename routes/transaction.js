@@ -12,6 +12,7 @@ router.post('/',
 );
 
 router.get('/:ref',
+    transaction.findTransaction,
     transaction.viewSpecificTransaction
 )
 
@@ -32,6 +33,23 @@ router.get(
 
 router.get('/fuspay/callback_url',
     transaction.verifyFuspayPayment
+);
+
+router.patch(
+    '/:ref',
+    transaction.findTransaction,
+    transaction.checkIfTransactionIsPending,
+    checkTransactionType,
+    setForNigeria,
+    setToNigeria,
+    ensureReceiverIsNigerian,
+    transaction.updateTransaction
+);
+
+router.patch(
+    '/:ref/cancel',
+    transaction.findTransaction,
+    transaction.cancelTransaction
 );
 
 module.exports = router;

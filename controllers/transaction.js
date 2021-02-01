@@ -167,20 +167,22 @@ exports.authorizeTransfer = catchAsync(async (req, res, next) => {
         data.webhook_secret === process.env.WEBHOOK_SECRET
     ) {
         const transaction = await Transaction.findOne({ reference: data.reference });
-        const authorize_url = "https://api.fusbeast.com/v1/MobileTransfer/Authorize";
+        if (transaction.status === 'paid') {
+            const authorize_url = "https://api.fusbeast.com/v1/MobileTransfer/Authorize";
 
-        //Authorize Transfer
-        await axios.post(authorize_url, {
-            authorization_code: data.authorization_code,
-            merchant_id: process.env.MERCHANT_ID,
-            amount: `${Math.round(Number(transaction.finalAmountReceivedInNaira))}`
-        },
-            {
-                headers: {
-                    Authorization: `Bearer ${process.env.MERCHANT_SECRET}`
+            //Authorize Transfer
+            await axios.post(authorize_url, {
+                authorization_code: data.authorization_code,
+                merchant_id: process.env.MERCHANT_ID,
+                amount: `${Math.round(Number(transaction.finalAmountReceivedInNaira))}`
+            },
+                {
+                    headers: {
+                        Authorization: `Bearer ${process.env.MERCHANT_SECRET}`
+                    }
                 }
-            }
-        )
+            )
+        }
     }
 });
 
@@ -297,12 +299,92 @@ exports.verifyFuspayPayment = catchAsync(async (req, res, next) => {
     }
 });
 
-exports.viewSpecificTransaction = catchAsync(async(req, res, next) => {
-    const transaction = await Transaction.findOne({
-        reference: req.params.ref
+exports.viewSpecificTransaction = catchAsync(async (req, res, next) => {
+    const { transaction } = req;
+    return res.status(200).json({
+        status: 'Success',
+        transaction
     });
+});
 
-    if(!transaction) return next(new AppError('Transaction not found!', 404));
+exports.updateTransaction = catchAsync(async (req, res, next) => {
+    let { transaction } = req;
+    const {
+        transactionType, senderFullName, senderPhoneNumber,
+        senderEmailAddress, accountNumberForRefund, bankForRefund,
+        bankSortCode, receiverFullName, receiverPhoneNumber, amount,
+        chargeReceiverTheCommission, country, currency, currencyId
+    } = req.body;
 
-    return res.status(200).json({status: 'Success', transaction});
+    if (transactionType) transaction.transactionType = transactionType;
+    if (senderFullName) transaction.senderFullName = senderFullName;
+    if (senderPhoneNumber) transaction.senderPhoneNumber = senderPhoneNumber;
+    if (senderEmailAddress) transaction.senderEmailAddress = senderEmailAddress;
+    if (accountNumberForRefund) transaction.accountNumberForRefund = accountNumberForRefund;
+    if (bankForRefund) transaction.bankForRefund = bankForRefund;
+    if (bankSortCode) transaction.bankSortCode = bankSortCode;
+    if (receiverFullName) transaction.receiverFullName = receiverFullName;
+    if (receiverPhoneNumber) transaction.receiverPhoneNumber = receiverPhoneNumber;
+    if (transactionType) transaction.transactionType = transactionType;
+    if (amount) transaction.amount = amount;
+    if (chargeReceiverTheCommission === true) transaction.chargeReceiverTheCommission = true;
+    if (chargeReceiverTheCommission === false) transaction.chargeReceiverTheCommission = false;
+    if (country) transaction.country = country;
+    if (currency) transaction.currency = currency;
+    if (currencyId) transaction.currencyId = currencyId;
+
+    transaction = await transaction.save();
+
+    return res.status(200).json({
+        status: 'Success',
+        message: 'Transaction updated!',
+        transaction
+    });
+});
+
+exports.cancelTransaction = catchAsync(async (req, res, next) => {
+    let { transaction } = req;
+
+    if (
+        transaction.status === 'received' || transaction.status === 'cancelled' ||
+        transaction.status === 'refunded'
+    ) {
+        return next(new AppError('You cannot cancel this transaction!', 403));
+    }
+
+    if (transaction.status === 'paid') {
+        const url = 'https://api.fusbeast.com/v1/Transfer/Verify';
+
+        if (transaction) {
+            const response = await axios.post(url, {
+                merchant_id: process.env.MERCHANT_ID,
+                reference: transaction.reference
+            }, {
+                    headers: {
+                        Authorization: `Bearer ${process.env.MERCHANT_SECRET}`
+                    }
+                }
+            );
+            const data = response.data;
+
+            if (
+                data.success === true && data.payment_status === "SUCCESS" &&
+                data.status === "SUCCESS" && data.transactionDescription === "Approved or completed successfully"
+            ) {
+                return next(new AppError('Sorry, you cannot cancel this transaction anymore. The receiver has already claimed the money.', 403));
+            }
+        }
+    }
+
+    transaction = await Transaction.findByIdAndUpdate(
+        transaction.id,
+        { status: 'cancelled' },
+        { new: true }
+    )
+
+    return res.status(200).json({
+        status: 'Success',
+        message: 'Transaction cancelled successfully!',
+        transaction
+    });
 });

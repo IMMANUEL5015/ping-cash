@@ -7,6 +7,7 @@ const stripe = Stripe(process.env.STRIPE_TEST_SECRET);
 const axios = require('axios');
 const Sms = require('../models/sms');
 const sendSms = require('../utils/sms');
+const email = require('../utils/email');
 
 const customerId = process.env.TELESIGN_CUSTOMER_ID;
 const apiKey = process.env.TELESIGN_API_KEY;
@@ -35,8 +36,14 @@ exports.initializeTransaction = catchAsync(async (req, res, next) => {
         currencyId: req.body.currencyId
     });
 
+    await email.sendRefCode(
+        req.body.senderEmailAddress,
+        req.body.senderFullName,
+        transaction.reference
+    )
+
     return res.status(201).json({
-        status: 'success', message: 'Transaction Initialized Successfully',
+        status: 'success', message: 'Transaction Initialized Successfully. Please check your mail to see the ref code for this transaction.',
         transaction
     });
 });

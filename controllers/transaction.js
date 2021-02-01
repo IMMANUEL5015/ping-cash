@@ -30,7 +30,7 @@ exports.initializeTransaction = catchAsync(async (req, res, next) => {
         receiverFullName: req.body.receiverFullName,
         receiverPhoneNumber: req.body.receiverPhoneNumber,
         amount: req.body.amount,
-        chargeReceiverTheCommission: req.body.chargeReceiverTheCommission,
+        chargeReceiverTheCommission: req.body.transactionType === 'send-to-nigeria' ? true : req.body.chargeReceiverTheCommission,
         country: req.body.country,
         currency: req.body.currency,
         currencyId: req.body.currencyId

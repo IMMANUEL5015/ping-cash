@@ -423,7 +423,7 @@ exports.refundMoneyToNigerian = async (transaction) => {
 
 exports.refundMoneyToForeigner = async (transaction) => {
     try {
-        const refund = await stripe.refunds.create({
+        await stripe.refunds.create({
             charge: transaction.chargeId,
         });
     } catch (error) {

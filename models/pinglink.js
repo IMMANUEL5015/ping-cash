@@ -5,65 +5,44 @@ const pinglinkSchema = mongoose.Schema({
         type: String,
         required: [true, 'Please tell us your name.']
     },
-    urlName: {
+    phoneNumber: {
         type: String,
-        required: [true, 'Please provide a url name for your ping link.'],
-        unique: true
-    },
-    paymentId: {
-        type: String,
-        required: [true, 'Please provide a payment id.']
+        required: [true, 'Please provide your phone number.'],
+        minlength: [11, 'Your phone number should consist of 11 characters.'],
+        maxlength: [11, 'Your phone number should consist of 11 characters.']
     },
     email: {
         type: String,
         required: [true, 'Please provide your email address.']
     },
-    description: {
-        type: String,
-        required: [true, "Please provide a description for this ping link."]
-    },
-    phoneNumber: {
-        type: String,
-        required: [true, 'Please tell us your phone number.']
-    },
     pin: {
         type: String,
-        required: [true, 'Please provide a pin for tracking this pinglink.'],
+        required: [true, 'Please provide a unique tracking pin for this ping link.'],
         unique: true,
-        minlength: [4, 'Your pin must consist of four characters.'],
-        maxlength: [4, 'Your pin must consist of four characters.'],
+        minlength: [4, 'Please your pin should consist of 4 characters.'],
+        maxlength: [4, 'Please your pin should consist of 4 characters.'],
+        select: false
     },
-    amount: {
+    linkAmount: {
         type: String,
-        required: [true, 'Please specify an amount.']
+        required: [true, 'Please specify an amount in dollars for this ping link.']
     },
     accountNumber: {
         type: String,
-        required: [true, 'Please specify your account number.']
-    },
-    bankName: {
-        type: String,
-        required: [true, 'Please specify your bank name.']
+        required: [true, 'Please tell us your account number.']
     },
     bankSortCode: {
         type: String,
-        required: [true, 'Please provide your bank sort code.']
+        required: [true, 'Please tell us your bank sort code.']
     },
-    thankYouMessage: {
-        type: String,
-        required: [true, 'Please specify a thank you message.']
-    },
-    url: {
-        type: String,
-        required: [true, 'Every pinglink must have a url.']
-    },
+    redirectUrl: String,
+    thankYouMessage: String,
+    linkUrl: { type: String, unique: true },
     createdAt: {
         type: Date,
         default: Date.now
     },
-    updatedAt: {
-        type: Date
-    }
+    updatedAt: Date
 });
 
 module.exports = PingLink = mongoose.model('PingLink', pinglinkSchema);

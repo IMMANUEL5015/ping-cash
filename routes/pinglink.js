@@ -6,4 +6,9 @@ router.post(
     pinglink.createPingLink
 )
 
+router.get(
+    '/get_ping_link_details/:urlname',
+    pinglink.getPingLinkData
+)
+
 module.exports = router;

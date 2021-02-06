@@ -5,6 +5,11 @@ const pinglinkSchema = mongoose.Schema({
         type: String,
         required: [true, 'Please tell us your name.']
     },
+    urlName: {
+        type: String,
+        required: [true, 'This field is required.'],
+        unique: true
+    },
     phoneNumber: {
         type: String,
         required: [true, 'Please provide your phone number.'],

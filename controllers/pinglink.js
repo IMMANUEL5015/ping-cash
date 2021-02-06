@@ -21,6 +21,7 @@ exports.createPingLink = catchAsync(async (req, res, next) => {
     const pingLink = await PingLink.create({
         linkName,
         phoneNumber,
+        urlName,
         pin,
         linkAmount,
         accountNumber,
@@ -36,6 +37,18 @@ exports.createPingLink = catchAsync(async (req, res, next) => {
     return res.status(201).json({
         status: 'Success',
         message: 'Pinglink created.',
+        pingLink
+    })
+});
+
+exports.getPingLinkData = catchAsync(async (req, res, next) => {
+    const urlName = req.params.urlname;
+
+    const pingLink = await PingLink.findOne({ urlName });
+    if (!pingLink) return next(new AppError('We cannot found what you are looking for.', 404));
+
+    return res.status(200).json({
+        status: 'Success',
         pingLink
     })
 });

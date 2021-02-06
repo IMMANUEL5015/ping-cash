@@ -8,7 +8,14 @@ router.post(
 
 router.get(
     '/get_ping_link_details/:urlname',
+    pinglink.findPingLink,
     pinglink.getPingLinkData
+)
+
+router.get(
+    '/make_ping_link_payment/:urlname',
+    pinglink.findPingLink,
+    pinglink.makePingLinkPayment
 )
 
 module.exports = router;

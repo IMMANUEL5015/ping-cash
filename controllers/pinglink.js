@@ -1,10 +1,13 @@
 const PingLink = require('../models/pinglink');
+const LinkTransaction = require('../models/linktransaction');
 const randomString = require('random-string');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const axios = require('axios');
 const sendEmail = require('../utils/email');
 const ChargeRate = require('../models/chargerate');
+const Stripe = require('stripe');
+const stripe = Stripe(process.env.STRIPE_TEST_SECRET);
 
 exports.createPingLink = catchAsync(async (req, res, next) => {
     const urlName = randomString({ length: 8, numeric: true });
@@ -41,14 +44,43 @@ exports.createPingLink = catchAsync(async (req, res, next) => {
     })
 });
 
-exports.getPingLinkData = catchAsync(async (req, res, next) => {
+exports.findPingLink = catchAsync(async (req, res, next) => {
     const urlName = req.params.urlname;
 
     const pingLink = await PingLink.findOne({ urlName });
     if (!pingLink) return next(new AppError('We cannot found what you are looking for.', 404));
 
+    req.pingLink = pingLink;
+    return next();
+});
+
+exports.getPingLinkData = catchAsync(async (req, res, next) => {
     return res.status(200).json({
         status: 'Success',
-        pingLink
+        pingLink: req.pingLink
     })
+});
+
+exports.makePingLinkPayment = catchAsync(async (req, res, next) => {
+    let pingLink = req.pingLink;
+
+    //Convert cents to dollars
+    const paymentIntent = await stripe.paymentIntents.create({
+        amount: Number(pingLink.linkAmount + "00"),
+        currency: 'usd',
+        metadata: { integration_check: 'accept_a_payment' },
+    });
+
+    const linkTransaction = await LinkTransaction.create({
+        pingLink,
+        amount: pingLink.linkAmount,
+        client_secret: paymentIntent.client_secret
+    });
+
+    return res.status(200).json({
+        status: 'Success',
+        client_secret: paymentIntent.client_secret,
+        pingLink,
+        linkTransaction
+    });
 });

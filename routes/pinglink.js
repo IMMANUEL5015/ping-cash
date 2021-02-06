@@ -17,8 +17,7 @@ router.post(
 router.get(
     '/pinglink_redirect_url',
     (req, res, next) => {
-        console.log("REDIRECT_URL", req);
-        console.log("REDIRECT_URL", req.ip);
+        res.status(200).json();
     }
 );
 

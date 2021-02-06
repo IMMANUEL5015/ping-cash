@@ -106,6 +106,7 @@ exports.verifyStripePayment = catchAsync(async (req, res, next) => {
     const sig = req.headers['stripe-signature'];
 
     let event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    const chargeId = event.data.object.charges.data[0].id;
     // Handle the event
     if (event && event.type === 'payment_intent.succeeded') {
         const paymentIntent = event.data.object;
@@ -113,7 +114,7 @@ exports.verifyStripePayment = catchAsync(async (req, res, next) => {
             res.status(200).json();
             const transaction = await Transaction.findOneAndUpdate(
                 { client_secret: paymentIntent.client_secret },
-                { status: 'paid' },
+                { status: 'paid', chargeId },
                 { new: true }
             );
 
@@ -353,8 +354,7 @@ exports.cancelTransaction = catchAsync(async (req, res, next) => {
     let { transaction } = req;
 
     if (
-        transaction.status === 'received' || transaction.status === 'cancelled' ||
-        transaction.status === 'refunded'
+        transaction.status === 'received' || transaction.status === 'cancelled'
     ) {
         return next(new AppError('You cannot cancel this transaction!', 403));
     }
@@ -395,3 +395,38 @@ exports.cancelTransaction = catchAsync(async (req, res, next) => {
         transaction
     });
 });
+
+exports.refundMoneyToNigerian = async (transaction) => {
+    try {
+        const {
+            finalAmountPaid, accountNumberForRefund, bankSortCode
+        } = transaction;
+
+        const url = 'https://api.fusbeast.com/v1/Transfer/Initiate';
+        const data = {
+            "pin": process.env.PIN,
+            "narration": "PingCash Transaction Refund.",
+            "account_number": accountNumberForRefund,
+            "bank_code": bankSortCode,
+            "to": "bank",
+            "amount": finalAmountPaid,
+            reference: transaction.id,
+            "merchant_id": process.env.MERCHANT_ID
+        };
+        const headers = { headers: { Authorization: `Bearer ${process.env.MERCHANT_SECRET}` } };
+
+        await axios.post(url, data, headers);
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+exports.refundMoneyToForeigner = async (transaction) => {
+    try {
+        const refund = await stripe.refunds.create({
+            charge: transaction.chargeId,
+        });
+    } catch (error) {
+        console.error(error);
+    }
+}

@@ -44,7 +44,7 @@ const transactionSchema = mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['pending', 'paid', 'cancelled', 'refunded', 'received'],
+        enum: ['pending', 'paid', 'cancelled', 'received'],
         default: 'pending'
     },
     charges: {
@@ -83,7 +83,8 @@ const transactionSchema = mongoose.Schema({
         ref: 'Currency'
     },
     client_secret: String,
-    exchangeRate: String
+    exchangeRate: String,
+    chargeId: String
 });
 
 transactionSchema.pre('save', async function (next) {

@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const pinglinkSchema = mongoose.Schema({
     linkName: {
         type: String,
-        required: [true, 'Please provide a name for your ping link.']
+        required: [true, 'Please tell us your name.']
     },
     urlName: {
         type: String,

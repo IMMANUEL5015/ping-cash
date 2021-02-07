@@ -120,7 +120,7 @@ exports.verifyStripePayment = catchAsync(async (req, res, next) => {
             });
 
             let linkTransaction = await LinkTransaction.findOne({
-                client_secret: /*paymentIntent.client_secret*/ 'pi_1IIERuHVGHJVPKyRMn3YqkpH_secret_Yf8iquGaTONDjw7tfG6ilSVQC'
+                client_secret: paymentIntent.client_secret
             })
 
             let pingLink = await PingLink.findById(linkTransaction.pingLink);

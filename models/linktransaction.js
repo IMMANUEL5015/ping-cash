@@ -24,6 +24,18 @@ const linkTransactionSchema = mongoose.Schema({
     charges: {
         type: String
     },
+    fullName: {
+        type: String,
+        required: ['true', 'What is your full name?']
+    },
+    email: {
+        type: String,
+        required: [true, 'Please provide your email address.']
+    },
+    phoneNumber: {
+        type: String,
+        required: [true, 'Please provide your phone number.']
+    }
 });
 
 linkTransactionSchema.pre('save', async function (next) {

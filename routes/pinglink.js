@@ -12,7 +12,7 @@ router.get(
     pinglink.getPingLinkData
 )
 
-router.get(
+router.post(
     '/make_ping_link_payment/:urlname',
     pinglink.findPingLink,
     pinglink.makePingLinkPayment

@@ -3,9 +3,7 @@ const LinkTransaction = require('../models/linktransaction');
 const randomString = require('random-string');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
-const axios = require('axios');
 const sendEmail = require('../utils/email');
-const ChargeRate = require('../models/chargerate');
 const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_TEST_SECRET);
 
@@ -74,7 +72,10 @@ exports.makePingLinkPayment = catchAsync(async (req, res, next) => {
     const linkTransaction = await LinkTransaction.create({
         pingLink,
         amount: pingLink.linkAmount,
-        client_secret: paymentIntent.client_secret
+        client_secret: paymentIntent.client_secret,
+        fullName: req.body.fullName,
+        email: req.body.email,
+        phoneNumber: req.body.phoneNumber
     });
 
     return res.status(200).json({

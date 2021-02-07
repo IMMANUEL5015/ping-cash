@@ -85,3 +85,25 @@ exports.makePingLinkPayment = catchAsync(async (req, res, next) => {
         linkTransaction
     });
 });
+
+exports.trackPingLink = catchAsync(async (req, res, next) => {
+    let { pingLink, pin } = req.body;
+    if (!pingLink) return next(new AppError('Please enter your ping link.', 400));
+    if (!pin) return next(new AppError('Please enter the pin.', 400));
+
+    pingLink = await PingLink.findOne({
+        linkUrl: pingLink,
+        pin
+    });
+
+    if (!pingLink) return next(new AppError('We cannot find what you are looking for.', 404));
+    const linkTransactions = await LinkTransaction.find({ pingLink: pingLink.id });
+
+    return res.status(200).json({
+        status: 'Success',
+        data: {
+            pingLink,
+            linkTransactions
+        }
+    })
+})

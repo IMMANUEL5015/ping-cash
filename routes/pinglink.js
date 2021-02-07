@@ -6,6 +6,11 @@ router.post(
     pinglink.createPingLink
 )
 
+router.post(
+    '/track_ping_link/',
+    pinglink.trackPingLink
+)
+
 router.get(
     '/get_ping_link_details/:urlname',
     pinglink.findPingLink,

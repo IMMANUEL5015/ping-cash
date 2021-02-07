@@ -120,7 +120,7 @@ exports.verifyStripePayment = catchAsync(async (req, res, next) => {
             });
 
             let linkTransaction = await LinkTransaction.findOne({
-                client_secret: paymentIntent.client_secret
+                client_secret: /*paymentIntent.client_secret*/ 'pi_1IIERuHVGHJVPKyRMn3YqkpH_secret_Yf8iquGaTONDjw7tfG6ilSVQC'
             })
 
             let pingLink = await PingLink.findById(linkTransaction.pingLink);
@@ -195,7 +195,7 @@ exports.verifyStripePayment = catchAsync(async (req, res, next) => {
                 await axios.post(url, data, headers);
 
                 const smsService = await Sms.findOne({ active: true });
-                const messageToBeSent = `Dear ${pingLink.linkName}. ${linkTransaction.fullName} has pinged you ${Math.floor(Number(linkTransaction.finalAmountReceivedInNaira))} Naira. Time: ${new Date(Date.now()).toLocaleTimeString()}. Fuspay Technology.`;
+                const messageToBeSent = `Dear ${pingLink.linkName}. ${linkTransaction.fullName} has pinged you ${Math.floor(Number(linkTransaction.finalAmountReceivedInNaira))} Naira via your pinglink. Time: ${new Date(Date.now()).toLocaleTimeString()}. Fuspay Technology.`;
                 if (smsService) {
                     if (smsService.name === 'Twilio') {
                         const phoneNumber = "+234" + pingLink.phoneNumber.slice(1, 11);

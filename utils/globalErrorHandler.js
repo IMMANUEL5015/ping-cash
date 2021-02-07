@@ -29,6 +29,23 @@ module.exports = async (error, req, res, next) => {
         }
     }
 
+    if (error.name === 'CastError') {
+        const message = `Invalid ${error.path}: ${error.value}`;
+        error.message = message;
+    }
+
+    if (error.code === 11000) {
+        const value = error.errmsg.match(/(["'])(?:\\.|[^\\])*?\1/)[0];
+        const message = `(${value}) is already in use. Please use something else.`;
+        error.message = message;
+    }
+
+    if (error.name === 'ValidationError'){
+        const errors = Object.values(error.errors).map(el => el.message);
+        const message = `Invalid Input Data. ${errors.join('. ')}`;
+        error.message = message;
+    }
+
     return res.status(error.statusCode || 500).json({
         status: error.status || 'error',
         message: error.message

@@ -88,7 +88,12 @@ exports.makePayment = catchAsync(async (req, res, next) => {
     const paymentIntent = await stripe.paymentIntents.create({
         amount: Number(transaction.finalAmountPaid + "00"),
         currency: transaction.currencyId.abbreviation,
-        metadata: { integration_check: 'accept_a_payment' },
+        metadata: {
+            integration_check: 'accept_a_payment',
+            transaction_id: transaction.id,
+        },
+        payment_method_types: ['card'],
+        setup_future_usage: 'off_session',
     });
 
     await Transaction.findByIdAndUpdate(

@@ -35,6 +35,13 @@ const linkTransactionSchema = mongoose.Schema({
     phoneNumber: {
         type: String,
         required: [true, 'Please provide your phone number.']
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    },
+    updatedAt: {
+        type: Date
     }
 });
 

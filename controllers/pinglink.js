@@ -46,7 +46,7 @@ exports.findPingLink = catchAsync(async (req, res, next) => {
     const urlName = req.params.urlname;
 
     const pingLink = await PingLink.findOne({ urlName });
-    if (!pingLink) return next(new AppError('We cannot found what you are looking for.', 404));
+    if (!pingLink) return next(new AppError('The resource you are looking for cannot be found.', 404));
 
     req.pingLink = pingLink;
     return next();
@@ -101,7 +101,7 @@ exports.trackPingLink = catchAsync(async (req, res, next) => {
         pin
     });
 
-    if (!pingLink) return next(new AppError('We cannot find what you are looking for.', 404));
+    if (!pingLink) return next(new AppError('The resource you are looking for cannot be found.', 404));
     const linkTransactions = await LinkTransaction.find({ pingLink: pingLink.id });
 
     return res.status(200).json({

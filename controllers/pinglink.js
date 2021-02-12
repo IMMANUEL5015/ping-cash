@@ -66,7 +66,12 @@ exports.makePingLinkPayment = catchAsync(async (req, res, next) => {
     const paymentIntent = await stripe.paymentIntents.create({
         amount: Number(pingLink.linkAmount + "00"),
         currency: 'usd',
-        metadata: { integration_check: 'accept_a_payment' },
+        metadata: {
+            integration_check: 'accept_a_payment',
+            transaction_id: pingLink.id,
+        },
+        payment_method_types: ['card'],
+        setup_future_usage: 'off_session',
     });
 
     const linkTransaction = await LinkTransaction.create({

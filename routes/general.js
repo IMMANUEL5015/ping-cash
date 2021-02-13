@@ -5,4 +5,8 @@ router.get('/banks',
     general.seeNigerianBanks
 );
 
+router.post('/calculator',
+    general.calculator
+);
+
 module.exports = router;

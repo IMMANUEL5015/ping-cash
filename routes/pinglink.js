@@ -1,8 +1,10 @@
 const router = require('express').Router();
 const pinglink = require('../controllers/pinglink');
+const { setBankAndBankCode } = require('../middlewares/general');
 
 router.post(
     '/create_ping_link',
+    setBankAndBankCode,
     pinglink.createPingLink
 )
 

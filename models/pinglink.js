@@ -36,6 +36,10 @@ const pinglinkSchema = mongoose.Schema({
         type: String,
         required: [true, 'Please tell us your account number.']
     },
+    bankName: {
+        type: String,
+        required: [true, 'Please tell us your bank name.']
+    },
     bankSortCode: {
         type: String,
         required: [true, 'Please tell us your bank sort code.']

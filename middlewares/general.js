@@ -2,6 +2,7 @@ const axios = require('axios');
 const catchAsync = require('../utils/catchAsync');
 const responses = require('../utils/responses');
 const ChargeRate = require('../models/chargerate');
+const { getBankSortCode, getBankName } = require('../utils/getBankDetails');
 const CreditRate = require('../models/creditrate');
 
 exports.seeNigerianBanks = catchAsync(async (req, res, next) => {
@@ -18,35 +19,11 @@ exports.seeNigerianBanks = catchAsync(async (req, res, next) => {
 
 exports.setBankAndBankCode = catchAsync(async (req, res, next) => {
     if (req.body.bankForRefund) {
-        const url = 'https://api.paystack.co/bank';
-        let banks = await axios.get(url, {
-            headers: {
-                'Authorization': `Bearer ${process.env.PAYSTACK_API_KEY}`
-            }
-        });
-        banks = banks.data.data;
-
-        for (let i = 0; i < banks.length; i++) {
-            if (req.body.bankForRefund === banks[i].name) {
-                req.body.bankSortCode = banks[i].code;
-            }
-        }
+        req.body.bankSortCode = await getBankSortCode(req.body.bankForRefund);
     }
 
     if (req.body.bankName) {
-        const url = 'https://api.paystack.co/bank';
-        let banks = await axios.get(url, {
-            headers: {
-                'Authorization': `Bearer ${process.env.PAYSTACK_API_KEY}`
-            }
-        });
-        banks = banks.data.data;
-
-        for (let i = 0; i < banks.length; i++) {
-            if (req.body.bankName === banks[i].name) {
-                req.body.bankSortCode = banks[i].code;
-            }
-        }
+        req.body.bankSortCode = await getBankSortCode(req.body.bankName);
     }
 
     return next();
@@ -113,4 +90,32 @@ exports.calculator = catchAsync(async (req, res, next) => {
         currency, exchangeRate
     };
     return responses.success(res, 200, 'Success', 'Calculation Completed!', data);
+});
+
+exports.verifyBankAcct = catchAsync(async (req, res, next) => {
+    const {
+        accountNumber, accountNumberForRefund,
+        bankName, bankForRefund
+    } = req.body;
+
+    let accountName;
+    let bankSortCode;
+
+    if (accountNumber && bankName) {
+        bankSortCode = await getBankSortCode(bankName);
+    }
+
+    if (accountNumberForRefund && bankForRefund) {
+        bankSortCode = await getBankSortCode(bankForRefund);
+
+    }
+    if (accountNumber && bankSortCode) {
+        accountName = await getBankName(accountNumber, bankSortCode);
+    }
+
+    if (accountNumberForRefund && bankSortCode) {
+        accountName = await getBankName(accountNumberForRefund, bankSortCode);
+    }
+
+    return responses.success(res, 200, "Success", "Account Details Resolved Successfully!", { accountName });
 });

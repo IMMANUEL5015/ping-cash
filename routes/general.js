@@ -9,4 +9,9 @@ router.post('/calculator',
     general.calculator
 );
 
+router.post(
+    '/verify_bank_acct',
+    general.verifyBankAcct
+);
+
 module.exports = router;

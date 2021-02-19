@@ -40,7 +40,7 @@ module.exports = async (error, req, res, next) => {
         error.message = message;
     }
 
-    if (error.name === 'ValidationError'){
+    if (error.name === 'ValidationError') {
         const errors = Object.values(error.errors).map(el => el.message);
         const message = `Invalid Input Data. ${errors.join('. ')}`;
         error.message = message;
@@ -48,6 +48,7 @@ module.exports = async (error, req, res, next) => {
 
     return res.status(error.statusCode || 500).json({
         status: error.status || 'error',
-        message: error.message
+        message: error.message,
+        msg: error.message
     });
 }

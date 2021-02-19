@@ -12,7 +12,7 @@ const template = (title, body) => `
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <link href="https://fonts.googleapis.com/css?family=Roboto+Mono:400,500" rel="stylesheet">
     <style>
-      * {font-family: 'Roboto Mono',monospace;}
+      * {font-family: Arial,Helvetica,sans-serif;}
       .container {width: 80%; max-width: 60em; margin: 0 auto;background: #fbfbfb;padding: 30px;color:#000}
       .message{font-size: 1rem;line-height: 1.5; color:#000}
     </style>
@@ -56,7 +56,7 @@ exports.sendPingLinkDetails = async (email, linkName, link, pin) => {
   let title = 'Ping Link Created';
   const body = `<p>${linkName}.</p>
   <p>You have successfully created your ping link.</p>
-  <p>Any Nigerian can now send you money using this link.</p>
+  <p>Anyone abroad can now pay you money using this link.</p>
   <p>For tracking your ping link, you would also need it's pin.</p>
   <p>Ping Link: ${link}</p>
   <p>Pin: ${pin}</p>`;

@@ -5,6 +5,7 @@ const { setBankAndBankCode } = require('../middlewares/general');
 router.post(
     '/create_ping_link',
     setBankAndBankCode,
+    pinglink.preventDuplicatePin,
     pinglink.createPingLink
 )
 

@@ -7,6 +7,17 @@ const sendEmail = require('../utils/email');
 const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_TEST_SECRET);
 
+exports.preventDuplicatePin = catchAsync(async (req, res, next) => {
+    const { pin } = req.body;
+
+    if (pin) {
+        const existingPingLink = await PingLink.findOne({ pin });
+        if (existingPingLink) return next(new AppError('Pin Already Exists!', 400));
+    }
+
+    return next();
+});
+
 exports.createPingLink = catchAsync(async (req, res, next) => {
     const urlName = randomString({ length: 8, numeric: true });
     const linkUrl = `https://pingcash-dev.netlify.app/pinglinks/${urlName}`

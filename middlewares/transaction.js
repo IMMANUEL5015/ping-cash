@@ -23,7 +23,7 @@ exports.setForNigeria = catchAsync(async (req, res, next) => {
 });
 
 exports.setToNigeria = catchAsync(async (req, res, next) => {
-    const { transactionType, country, currency, senderEmailAddress, amount } = req.body;
+    const { transactionType, country, currency, amount } = req.body;
     if (transactionType === "send-to-nigeria") {
         if (!country) return next(new AppError('Please specify the country you are sending money from.', 400));
         if (!currency) return next(new AppError("Please specify the currency you want to use to send money.", 400));

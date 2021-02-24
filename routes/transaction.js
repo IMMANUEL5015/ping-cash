@@ -47,6 +47,7 @@ router.patch(
     setForNigeria,
     setToNigeria,
     ensureReceiverIsNigerian,
+    setBankAndBankCode,
     transaction.updateTransaction
 );
 

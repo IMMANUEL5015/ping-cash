@@ -18,7 +18,7 @@ exports.seeNigerianBanks = catchAsync(async (req, res, next) => {
 });
 
 exports.setBankAndBankCode = catchAsync(async (req, res, next) => {
-    if (req.body.bankForRefund) {
+    if (req.body.bankForRefund && req.body.transactionType === 'send-within-nigeria') {
         req.body.bankSortCode = await getBankSortCode(req.body.bankForRefund);
     }
 

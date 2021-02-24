@@ -53,7 +53,7 @@ exports.createPingLink = catchAsync(async (req, res, next) => {
 
     return res.status(201).json({
         status: 'Success',
-        message: 'Pinglink created.',
+        message: 'Your Pinglink has been created. Please check your mail box.',
         pingLink
     })
 });

@@ -29,6 +29,8 @@ exports.checkPaymentType = catchAsync(async (req, res, next) => {
             if (linkAmount && String(linkAmount).includes('.')) return error(res, 400, 'Fail', 'Currently, we only accept money in whole number values, not decimals.');
         }
     }
+
+    return next();
 });
 
 exports.preventDuplicatePin = catchAsync(async (req, res, next) => {

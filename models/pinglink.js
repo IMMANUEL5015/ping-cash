@@ -20,6 +20,13 @@ const pinglinkSchema = mongoose.Schema({
         type: String,
         required: [true, 'Please provide your email address.']
     },
+    paymentType: {
+        required: [true, 'Please specify the payment type for this pinglink.'],
+        type: String,
+        enum: ["fixed", "flexible"],
+        default: "fixed"
+    },
+    minimumAmount: String,
     pin: {
         type: String,
         required: [true, 'Please provide a unique tracking pin for this ping link.'],

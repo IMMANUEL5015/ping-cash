@@ -4,6 +4,7 @@ const { setBankAndBankCode } = require('../middlewares/general');
 
 router.post(
     '/create_ping_link',
+    pinglink.checkPaymentType,
     setBankAndBankCode,
     pinglink.preventDuplicatePin,
     pinglink.createPingLink
@@ -23,6 +24,7 @@ router.get(
 router.post(
     '/make_ping_link_payment/:urlname',
     pinglink.findPingLink,
+    pinglink.flexiblePayments,
     pinglink.makePingLinkPayment
 )
 

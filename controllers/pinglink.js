@@ -6,6 +6,30 @@ const AppError = require('../utils/appError');
 const sendEmail = require('../utils/email');
 const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_TEST_SECRET);
+const { error } = require('../utils/responses');
+
+exports.checkPaymentType = catchAsync(async (req, res, next) => {
+    const { paymentType, minimumAmount, linkAmount } = req.body;
+
+    if (paymentType === 'fixed') req.body.minimumAmount = undefined;
+    if (paymentType === 'flexible') {
+        if (!minimumAmount) {
+            return error(res, 400, 'Fail', 'Please specify a minimum amount for this pinglink!')
+        }
+
+        if (minimumAmount && linkAmount && (Number(minimumAmount) > Number(linkAmount))) {
+            return error(res, 400, 'Fail', 'The specified minimum amount is too high!');
+        }
+
+        if(minimumAmount){
+            if (minimumAmount && String(minimumAmount).includes('.')) return error(res, 400, 'Fail', 'Currently, we only accept money in whole number values, not decimals.');
+        }
+
+        if(linkAmount){
+            if (linkAmount && String(linkAmount).includes('.')) return error(res, 400, 'Fail', 'Currently, we only accept money in whole number values, not decimals.');
+        }
+    }
+});
 
 exports.preventDuplicatePin = catchAsync(async (req, res, next) => {
     const { pin } = req.body;
@@ -13,10 +37,7 @@ exports.preventDuplicatePin = catchAsync(async (req, res, next) => {
     if (pin) {
         const existingPingLink = await PingLink.findOne({ pin });
         if (existingPingLink)
-            return res.status(400).json({
-                status: 'Fail',
-                message: 'Pin Already Exists!'
-            })
+            return error(res, 400, 'Fail', 'Pin Already Exists!');
     }
 
     return next();
@@ -29,7 +50,8 @@ exports.createPingLink = catchAsync(async (req, res, next) => {
         linkName, phoneNumber, pin,
         linkAmount, accountNumber,
         bankSortCode, redirectUrl,
-        thankYouMessage, email, bankName
+        thankYouMessage, email, bankName,
+        paymentType, minimumAmount
     } = req.body;
 
     if (linkAmount.includes('.')) return next(new AppError('Please. The link amount must be an integer value.'));
@@ -46,7 +68,9 @@ exports.createPingLink = catchAsync(async (req, res, next) => {
         redirectUrl,
         thankYouMessage,
         linkUrl,
-        email
+        email,
+        paymentType,
+        minimumAmount
     });
 
     await sendEmail.sendPingLinkDetails(email, linkName, linkUrl, pin);
@@ -75,12 +99,33 @@ exports.getPingLinkData = catchAsync(async (req, res, next) => {
     })
 });
 
+exports.flexiblePayments = catchAsync(async (req, res, next) => {
+    let pingLink = req.pingLink;
+    if (pingLink.paymentType === 'fixed') return next();
+    
+    //If payment type is flexible
+
+    const { amount } = req.body;
+
+    if (!amount) {
+        return error(res, 400, 'Fail', 'Please specify the amount you want to pay.');
+    }
+
+    if (String(amount).includes('.')) return error(res, 400, 'Fail', 'Currently, we only accept money in whole number values, not decimals.');
+
+    if(Number(amount) < Number(pingLink.minimumAmount)) return error(res, 400, 'Fail', `The amount you want to pay should be at least ${pingLink.minimumAmount}.`);
+
+    req.amount = amount;
+    return next();
+});
+
 exports.makePingLinkPayment = catchAsync(async (req, res, next) => {
     let pingLink = req.pingLink;
+    const amount = req.amount;
 
     //Convert cents to dollars
     const paymentIntent = await stripe.paymentIntents.create({
-        amount: Number(pingLink.linkAmount + "00"),
+        amount: amount ? Number(amount + "00") : Number(pingLink.linkAmount + "00"),
         currency: 'usd',
         metadata: {
             integration_check: 'accept_a_payment',
@@ -92,7 +137,7 @@ exports.makePingLinkPayment = catchAsync(async (req, res, next) => {
 
     const linkTransaction = await LinkTransaction.create({
         pingLink,
-        amount: pingLink.linkAmount,
+        amount: amount ? amount : pingLink.linkAmount,
         client_secret: paymentIntent.client_secret,
         fullName: req.body.fullName,
         email: req.body.email,
@@ -127,4 +172,4 @@ exports.trackPingLink = catchAsync(async (req, res, next) => {
             linkTransactions
         }
     })
-})
+});

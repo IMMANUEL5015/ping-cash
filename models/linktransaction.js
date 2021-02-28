@@ -13,7 +13,7 @@ const linkTransactionSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'ChargeRate'
     },
-    client_secret: String,
+    session_id: String,
     exchangeRate: String,
     finalAmountReceived: {
         type: String

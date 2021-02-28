@@ -21,11 +21,11 @@ exports.checkPaymentType = catchAsync(async (req, res, next) => {
             return error(res, 400, 'Fail', 'The specified minimum amount is too high!');
         }
 
-        if(minimumAmount){
+        if (minimumAmount) {
             if (minimumAmount && String(minimumAmount).includes('.')) return error(res, 400, 'Fail', 'Currently, we only accept money in whole number values, not decimals.');
         }
 
-        if(linkAmount){
+        if (linkAmount) {
             if (linkAmount && String(linkAmount).includes('.')) return error(res, 400, 'Fail', 'Currently, we only accept money in whole number values, not decimals.');
         }
     }
@@ -104,7 +104,7 @@ exports.getPingLinkData = catchAsync(async (req, res, next) => {
 exports.flexiblePayments = catchAsync(async (req, res, next) => {
     let pingLink = req.pingLink;
     if (pingLink.paymentType === 'fixed') return next();
-    
+
     //If payment type is flexible
 
     const { amount } = req.body;
@@ -115,7 +115,7 @@ exports.flexiblePayments = catchAsync(async (req, res, next) => {
 
     if (String(amount).includes('.')) return error(res, 400, 'Fail', 'Currently, we only accept money in whole number values, not decimals.');
 
-    if(Number(amount) < Number(pingLink.minimumAmount)) return error(res, 400, 'Fail', `The amount you want to pay should be at least ${pingLink.minimumAmount}.`);
+    if (Number(amount) < Number(pingLink.minimumAmount)) return error(res, 400, 'Fail', `The amount you want to pay should be at least ${pingLink.minimumAmount}.`);
 
     req.amount = amount;
     return next();
@@ -125,22 +125,29 @@ exports.makePingLinkPayment = catchAsync(async (req, res, next) => {
     let pingLink = req.pingLink;
     const amount = req.amount;
 
-    //Convert cents to dollars
-    const paymentIntent = await stripe.paymentIntents.create({
-        amount: amount ? Number(amount + "00") : Number(pingLink.linkAmount + "00"),
-        currency: 'usd',
-        metadata: {
-            integration_check: 'accept_a_payment',
-            transaction_id: pingLink.id,
-        },
+    const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
-        setup_future_usage: 'off_session',
+        line_items: [
+            {
+                price_data: {
+                    currency: 'usd',
+                    product_data: {
+                        name: 'Ping Money',
+                    },
+                    unit_amount: amount ? Number(amount + "00") : Number(pingLink.linkAmount + "00"),
+                },
+                quantity: 1,
+            },
+        ],
+        mode: 'payment',
+        success_url: 'https://pingcash-dev.netlify.app/', //To be changed later
+        cancel_url: 'https://pingcash-dev.netlify.app/' //To be changed later
     });
 
     const linkTransaction = await LinkTransaction.create({
         pingLink,
         amount: amount ? amount : pingLink.linkAmount,
-        client_secret: paymentIntent.client_secret,
+        session_id: session.id,
         fullName: req.body.fullName,
         email: req.body.email,
         phoneNumber: req.body.phoneNumber
@@ -148,7 +155,7 @@ exports.makePingLinkPayment = catchAsync(async (req, res, next) => {
 
     return res.status(200).json({
         status: 'Success',
-        client_secret: paymentIntent.client_secret,
+        session_id: session.id,
         pingLink,
         linkTransaction
     });

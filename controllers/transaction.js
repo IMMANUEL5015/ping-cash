@@ -91,13 +91,15 @@ exports.makePayment = catchAsync(async (req, res, next) => {
                 price_data: {
                     currency: 'usd',
                     product_data: {
-                        name: 'send money to nigeria',
+                        name: 'Send Money to Nigeria',
                     },
                     unit_amount: Number(transaction.finalAmountPaid + "00"),
                 },
                 quantity: 1,
             },
         ],
+        customer_email: transaction.senderEmailAddress,
+        client_reference_id: transaction.id,
         mode: 'payment',
         success_url: 'https://pingcash-dev.netlify.app/', //To be changed later
         cancel_url: 'https://pingcash-dev.netlify.app/' //To be changed later

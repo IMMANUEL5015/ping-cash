@@ -84,27 +84,34 @@ exports.ensureTransactionIsFromNigeria = catchAsync(async (req, res, next) => {
 
 exports.makePayment = catchAsync(async (req, res, next) => {
     const { transaction } = req;
-    //Convert cents to dollars
-    const paymentIntent = await stripe.paymentIntents.create({
-        amount: Number(transaction.finalAmountPaid + "00"),
-        currency: transaction.currencyId.abbreviation,
-        metadata: {
-            integration_check: 'accept_a_payment',
-            transaction_id: transaction.id,
-        },
+    const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
-        setup_future_usage: 'off_session',
+        line_items: [
+            {
+                price_data: {
+                    currency: 'usd',
+                    product_data: {
+                        name: 'send money to nigeria',
+                    },
+                    unit_amount: Number(transaction.finalAmountPaid + "00"),
+                },
+                quantity: 1,
+            },
+        ],
+        mode: 'payment',
+        success_url: 'https://pingcash-dev.netlify.app/', //To be changed later
+        cancel_url: 'https://pingcash-dev.netlify.app/' //To be changed later
     });
 
     await Transaction.findByIdAndUpdate(
         transaction.id,
-        { client_secret: paymentIntent.client_secret },
+        { session_id: session.id },
         { new: true }
     );
 
     return res.status(200).json({
         status: 'Success',
-        client_secret: paymentIntent.client_secret,
+        session_id: session.id,
         name: transaction.senderFullName
     })
 });

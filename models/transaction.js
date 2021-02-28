@@ -82,7 +82,7 @@ const transactionSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Currency'
     },
-    client_secret: String,
+    session_id: String,
     exchangeRate: String,
     chargeId: String
 });

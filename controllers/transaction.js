@@ -323,9 +323,11 @@ exports.getCheckoutUrl = catchAsync(async (req, res, next) => {
 });
 
 exports.verifyFuspayPayment = catchAsync(async (req, res, next) => {
+    res.redirect('https://pingcash-dev.netlify.app/');
+    console.log("IPS", req.ip, process.env.FUSPAY_IP_ADDRESS)
     if (req.ip === process.env.FUSPAY_IP_ADDRESS) {
-        res.redirect('https://pingcash-dev.netlify.app/');
         const data = req.query;
+        console.log(data);
         if (data.status === 'PAID' && data.code === '1') {
             const { reference } = data;
 

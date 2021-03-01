@@ -21,7 +21,13 @@ exports.sendWithTermi = async (to, sms) => {
         "type": "plain",
         "channel": "generic",
         "api_key": process.env.TERMII_API_KEY
-    });
+    },
+        {
+            'headers': {
+                'Content-Type': ['application/json', 'application/json']
+            },
+        }
+    );
 }
 
 exports.sendWithTelesign = async (customerId, apiKey, rest_endpoint,

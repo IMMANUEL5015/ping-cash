@@ -124,7 +124,7 @@ exports.verifyStripePayment = catchAsync(async (req, res, next) => {
     let event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
     const chargeId = event.data.object.charges.data[0].id;
     // Handle the event
-    if (event && event.type === 'payment_intent.succeeded') {
+    if (event && event.type === 'checkout.session.completed') {
         const paymentIntent = event.data.object;
         if (paymentIntent.status === 'succeeded') {
             res.status(200).json();

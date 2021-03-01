@@ -125,6 +125,14 @@ exports.makePingLinkPayment = catchAsync(async (req, res, next) => {
     let pingLink = req.pingLink;
     const amount = req.amount;
 
+    const linkTransaction = await LinkTransaction.create({
+        pingLink,
+        amount: amount ? amount : pingLink.linkAmount,
+        fullName: req.body.fullName,
+        email: req.body.email,
+        phoneNumber: req.body.phoneNumber
+    });
+
     const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [
@@ -140,18 +148,15 @@ exports.makePingLinkPayment = catchAsync(async (req, res, next) => {
             },
         ],
         mode: 'payment',
+        client_reference_id: linkTransaction.id,
+        customer_email: req.body.email,
         success_url: 'https://pingcash-dev.netlify.app/', //To be changed later
         cancel_url: 'https://pingcash-dev.netlify.app/' //To be changed later
     });
 
-    const linkTransaction = await LinkTransaction.create({
-        pingLink,
-        amount: amount ? amount : pingLink.linkAmount,
+    await LinkTransaction.findByIdAndUpdate(linkTransaction.id, {
         session_id: session.id,
-        fullName: req.body.fullName,
-        email: req.body.email,
-        phoneNumber: req.body.phoneNumber
-    });
+    }, { new: true });
 
     return res.status(200).json({
         status: 'Success',

@@ -101,8 +101,8 @@ exports.makePayment = catchAsync(async (req, res, next) => {
         customer_email: transaction.senderEmailAddress,
         client_reference_id: transaction.id,
         mode: 'payment',
-        success_url: 'https://pingcash-dev.netlify.app/', //To be changed later
-        cancel_url: 'https://pingcash-dev.netlify.app/' //To be changed later
+        success_url: process.env.HOME_PAGE, //To be changed later
+        cancel_url: process.env.HOME_PAGE //To be changed later
     });
 
     await Transaction.findByIdAndUpdate(
@@ -273,34 +273,38 @@ exports.authorizeTransfer = catchAsync(async (req, res, next) => {
 
 //Verify paid transactions at 11:59pm every day.
 cron.schedule('59 23 * * *', async () => {
-    const transactions = await Transaction.find({ status: 'paid' });
-    for (let i = 0; i < transactions.length; i++) {
-        const transaction = transactions[i];
+    try {
+        const transactions = await Transaction.find({ status: 'paid' });
+        for (let i = 0; i < transactions.length; i++) {
+            const transaction = transactions[i];
 
-        const url = 'https://api.fusbeast.com/v1/Transfer/Verify';
+            const url = 'https://api.fusbeast.com/v1/Transfer/Verify';
 
-        if (transaction) {
-            const response = await axios.post(url, {
-                merchant_id: process.env.MERCHANT_ID,
-                reference: transaction.reference
-            }, {
-                    headers: {
-                        Authorization: `Bearer ${process.env.MERCHANT_SECRET}`
+            if (transaction) {
+                const response = await axios.post(url, {
+                    merchant_id: process.env.MERCHANT_ID,
+                    reference: transaction.reference
+                }, {
+                        headers: {
+                            Authorization: `Bearer ${process.env.MERCHANT_SECRET}`
+                        }
                     }
+                );
+
+                const data = response.data;
+
+                if (
+                    data.success === true && data.payment_status === "SUCCESS" &&
+                    data.status === "SUCCESS" && data.transactionDescription === "Approved or completed successfully"
+                ) {
+                    await Transaction.findByIdAndUpdate(transaction.id, { status: 'received' }, {
+                        new: true
+                    });
                 }
-            );
-
-            const data = response.data;
-
-            if (
-                data.success === true && data.payment_status === "SUCCESS" &&
-                data.status === "SUCCESS" && data.transactionDescription === "Approved or completed successfully"
-            ) {
-                await Transaction.findByIdAndUpdate(transaction.id, { status: 'received' }, {
-                    new: true
-                });
             }
         }
+    } catch (error) {
+        console.error(error);
     }
 });
 
@@ -313,7 +317,7 @@ exports.getCheckoutUrl = catchAsync(async (req, res, next) => {
         checkout_type: 'DIRECT',
         customer_email: transaction.senderEmailAddress,
         amount: `${Math.round(Number(transaction.finalAmountPaid))}`,
-        callback_url: process.env.FUSPAY_CALLBACK_URL
+        callback_url: /*process.env.HOME_PAGE*/ process.env.FUSPAY_CALLBACK_URL
     });
 
     return res.status(200).json({
@@ -323,68 +327,68 @@ exports.getCheckoutUrl = catchAsync(async (req, res, next) => {
 });
 
 exports.verifyFuspayPayment = catchAsync(async (req, res, next) => {
-    res.redirect('https://pingcash-dev.netlify.app/');
-    console.log("IPS", req.ip, process.env.FUSPAY_IP_ADDRESS)
-    if (req.ip === process.env.FUSPAY_IP_ADDRESS) {
-        const data = req.query;
-        console.log(data);
-        if (data.status === 'PAID' && data.code === '1') {
-            const { reference } = data;
+    res.redirect(process.env.HOME_PAGE);
+    // console.log("IPS", req.ip, process.env.FUSPAY_IP_ADDRESS)
+    // if (req.ip === process.env.FUSPAY_IP_ADDRESS) {
+    const data = req.query;
+    // console.log(data);
+    if (data.status === 'PAID' && data.code === '1') {
+        const { reference } = data;
 
-            const transaction = await Transaction.findOneAndUpdate(
-                { reference },
-                { status: 'paid' },
-                { new: true }
-            );
+        const transaction = await Transaction.findOneAndUpdate(
+            { reference },
+            { status: 'paid' },
+            { new: true }
+        );
 
-            //Initiate Transfer and Generate USSD Code
-            const url = 'https://api.fusbeast.com/v1/MobileTransfer/Initiate';
-            const response = await axios.post(url, {
-                webhook_secret: process.env.WEBHOOK_SECRET,
-                reference: transaction.reference,
-                mobile_no: transaction.receiverPhoneNumber,
-                merchant_id: process.env.MERCHANT_ID,
-                webhook_url: process.env.WEBHOOK_URL
-            }, {
-                    headers: {
-                        Authorization: `Bearer ${process.env.MERCHANT_SECRET}`
+        //Initiate Transfer and Generate USSD Code
+        const url = 'https://api.fusbeast.com/v1/MobileTransfer/Initiate';
+        const response = await axios.post(url, {
+            webhook_secret: process.env.WEBHOOK_SECRET,
+            reference: transaction.reference,
+            mobile_no: transaction.receiverPhoneNumber,
+            merchant_id: process.env.MERCHANT_ID,
+            webhook_url: process.env.WEBHOOK_URL
+        }, {
+                headers: {
+                    Authorization: `Bearer ${process.env.MERCHANT_SECRET}`
+                }
+            }
+        );
+
+        //Send USSD Code
+        const ussd = response.data.ussd;
+        const smsService = await Sms.findOne({ active: true });
+        const messageToBeSent = `Dear ${transaction.receiverFullName}. ${transaction.senderFullName} has pinged you ${Math.round(Number(transaction.finalAmountReceivedInNaira))} Naira. Time: ${new Date(Date.now()).toLocaleTimeString()}. Ref: ${transaction.reference}. Dial ${ussd} to withdraw your money. Fuspay Technology.`;
+        if (smsService) {
+            if (smsService.name === 'Twilio') {
+                const phoneNumber = "+234" + transaction.receiverPhoneNumber.slice(1, 11);
+                const body = messageToBeSent;
+                await sendSms.sendWithTwilio(body, phoneNumber);
+            }
+
+            if (smsService.name === 'Telesign') {
+                const message = messageToBeSent;
+                const messageCallback = function messageCallback(error, responseBody) {
+                    if (error === null) {
+                        console.log('Telesign Messaging Successful.')
+                    } else {
+                        console.error('Error in Telesign Messaging');
                     }
                 }
-            );
 
-            //Send USSD Code
-            const ussd = response.data.ussd;
-            const smsService = await Sms.findOne({ active: true });
-            const messageToBeSent = `Dear ${transaction.receiverFullName}. ${transaction.senderFullName} has pinged you ${Math.round(Number(transaction.finalAmountReceivedInNaira))} Naira. Time: ${new Date(Date.now()).toLocaleTimeString()}. Ref: ${transaction.reference}. Dial ${ussd} to withdraw your money. Fuspay Technology.`;
-            if (smsService) {
-                if (smsService.name === 'Twilio') {
-                    const phoneNumber = "+234" + transaction.receiverPhoneNumber.slice(1, 11);
-                    const body = messageToBeSent;
-                    await sendSms.sendWithTwilio(body, phoneNumber);
-                }
+                const phoneNumber = "+234" + transaction.receiverPhoneNumber.slice(1, 11);
+                await sendSms.sendWithTelesign(customerId, apiKey, rest_endpoint, timeout, phoneNumber, message, 'ARN', messageCallback);
+            }
 
-                if (smsService.name === 'Telesign') {
-                    const message = messageToBeSent;
-                    const messageCallback = function messageCallback(error, responseBody) {
-                        if (error === null) {
-                            console.log('Telesign Messaging Successful.')
-                        } else {
-                            console.error('Error in Telesign Messaging');
-                        }
-                    }
-
-                    const phoneNumber = "+234" + transaction.receiverPhoneNumber.slice(1, 11);
-                    await sendSms.sendWithTelesign(customerId, apiKey, rest_endpoint, timeout, phoneNumber, message, 'ARN', messageCallback);
-                }
-
-                if (smsService.name === 'Termii') {
-                    const sms = messageToBeSent;
-                    const phoneNumber = "+234" + transaction.receiverPhoneNumber.slice(1, 11);
-                    await sendSms.sendWithTermi(phoneNumber, sms);
-                }
+            if (smsService.name === 'Termii') {
+                const sms = messageToBeSent;
+                const phoneNumber = "+234" + transaction.receiverPhoneNumber.slice(1, 11);
+                await sendSms.sendWithTermi(phoneNumber, sms);
             }
         }
     }
+    // }
 });
 
 exports.viewSpecificTransaction = catchAsync(async (req, res, next) => {

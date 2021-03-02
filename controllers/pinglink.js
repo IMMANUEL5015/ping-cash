@@ -150,8 +150,8 @@ exports.makePingLinkPayment = catchAsync(async (req, res, next) => {
         mode: 'payment',
         client_reference_id: linkTransaction.id,
         customer_email: req.body.email,
-        success_url: pingLink.redirectUrl ? pingLink.redirectUrl : 'https://pingcash-dev.netlify.app/', //To be changed later
-        cancel_url: 'https://pingcash-dev.netlify.app/' //To be changed later
+        success_url: pingLink.redirectUrl ? pingLink.redirectUrl : process.env.HOME_PAGE, //To be changed later
+        cancel_url: process.env.HOME_PAGE //To be changed later
     });
 
     await LinkTransaction.findByIdAndUpdate(linkTransaction.id, {

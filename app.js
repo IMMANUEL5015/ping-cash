@@ -5,7 +5,6 @@ const cors = require('cors');
 const router = require('./routes.js');
 const transaction = require('./controllers/transaction');
 const bodyParser = require('body-parser');
-const axios = require('axios');
 
 //Connect to database
 const URI = process.env.DATABASE_URI;

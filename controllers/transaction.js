@@ -317,7 +317,7 @@ exports.getCheckoutUrl = catchAsync(async (req, res, next) => {
         checkout_type: 'DIRECT',
         customer_email: transaction.senderEmailAddress,
         amount: `${Math.round(Number(transaction.finalAmountPaid))}`,
-        callback_url: /*process.env.HOME_PAGE*/ process.env.FUSPAY_CALLBACK_URL
+        callback_url: process.env.HOME_PAGE
     });
 
     return res.status(200).json({

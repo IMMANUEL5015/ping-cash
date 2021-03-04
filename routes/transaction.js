@@ -35,9 +35,9 @@ router.get(
     transaction.getCheckoutUrl
 );
 
-router.get('/fuspay/callback_url',
-    transaction.verifyFuspayPayment
-);
+// router.get('/fuspay/callback_url',
+//     transaction.verifyFuspayPayment
+// );
 
 router.patch(
     '/:ref',

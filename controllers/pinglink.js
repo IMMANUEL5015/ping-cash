@@ -39,7 +39,7 @@ exports.preventDuplicatePin = catchAsync(async (req, res, next) => {
     if (pin) {
         const existingPingLink = await PingLink.findOne({ pin });
         if (existingPingLink)
-            return error(res, 400, 'Fail', 'Pin Already Exists!');
+            return error(res, 200, 'Fail', 'Pin Already Exists!');
     }
 
     return next();

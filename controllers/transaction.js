@@ -343,48 +343,40 @@ cron.schedule('*/5 * * * *', async () => {
 
                 //Initiate Transfer and Generate USSD Code
                 const url = 'https://api.fusbeast.com/v1/MobileTransfer/Initiate';
-                const response = await axios.post(url, {
-                    webhook_secret: process.env.WEBHOOK_SECRET,
-                    reference: transaction.reference,
-                    mobile_no: transaction.receiverPhoneNumber,
-                    merchant_id: process.env.MERCHANT_ID,
-                    webhook_url: process.env.WEBHOOK_URL
-                }, {
-                        headers: {
-                            Authorization: `Bearer ${process.env.MERCHANT_SECRET}`
-                        }
-                    }
-                );
+                const response = await initTransferAndGenUssd(url, transaction);
 
                 //Send USSD Code
-                const ussd = response.data.ussd;
-                const smsService = await Sms.findOne({ active: true });
-                const messageToBeSent = `Dear ${transaction.receiverFullName}. ${transaction.senderFullName} has pinged you ${Math.round(Number(transaction.finalAmountReceivedInNaira))} Naira. Time: ${new Date(Date.now()).toLocaleTimeString()}. Ref: ${transaction.reference}. Dial ${ussd} to withdraw your money. Fuspay Technology.`;
-                if (smsService) {
-                    if (smsService.name === 'Twilio') {
-                        const phoneNumber = "+234" + transaction.receiverPhoneNumber.slice(1, 11);
-                        const body = messageToBeSent;
-                        await sendSms.sendWithTwilio(body, phoneNumber);
-                    }
+                let ussd;
+                if (response) ussd = response.data.ussd;
+                if (ussd) {
+                    const smsService = await Sms.findOne({ active: true });
+                    const messageToBeSent = `Dear ${transaction.receiverFullName}. ${transaction.senderFullName} has pinged you ${Math.round(Number(transaction.finalAmountReceivedInNaira))} Naira. Time: ${new Date(Date.now()).toLocaleTimeString()}. Ref: ${transaction.reference}. Dial ${ussd} to withdraw your money. Fuspay Technology.`;
+                    if (smsService) {
+                        if (smsService.name === 'Twilio') {
+                            const phoneNumber = "+234" + transaction.receiverPhoneNumber.slice(1, 11);
+                            const body = messageToBeSent;
+                            await sendSms.sendWithTwilio(body, phoneNumber);
+                        }
+                        if (smsService.name === 'Telesign') {
 
-                    if (smsService.name === 'Telesign') {
-                        const message = messageToBeSent;
-                        const messageCallback = function messageCallback(error, responseBody) {
-                            if (error === null) {
-                                console.log('Telesign Messaging Successful.')
-                            } else {
-                                console.error('Error in Telesign Messaging');
+                            const message = messageToBeSent;
+                            const messageCallback = function messageCallback(error, responseBody) {
+                                if (error === null) {
+                                    console.log('Telesign Messaging Successful.')
+                                } else {
+                                    console.error('Error in Telesign Messaging');
+                                }
                             }
+
+                            const phoneNumber = "+234" + transaction.receiverPhoneNumber.slice(1, 11);
+                            await sendSms.sendWithTelesign(customerId, apiKey, rest_endpoint, timeout, phoneNumber, message, 'ARN', messageCallback);
                         }
 
-                        const phoneNumber = "+234" + transaction.receiverPhoneNumber.slice(1, 11);
-                        await sendSms.sendWithTelesign(customerId, apiKey, rest_endpoint, timeout, phoneNumber, message, 'ARN', messageCallback);
-                    }
-
-                    if (smsService.name === 'Termii') {
-                        const sms = messageToBeSent;
-                        const phoneNumber = "+234" + transaction.receiverPhoneNumber.slice(1, 11);
-                        await sendSms.sendWithTermi(phoneNumber, sms);
+                        if (smsService.name === 'Termii') {
+                            const sms = messageToBeSent;
+                            const phoneNumber = "+234" + transaction.receiverPhoneNumber.slice(1, 11);
+                            await sendSms.sendWithTermi(phoneNumber, sms);
+                        }
                     }
                 }
             }
@@ -541,6 +533,27 @@ const verifyPaymentToFuspay = async (url) => {
         const response = await axios.get(url);
 
         if (response) return response.data;
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+const initTransferAndGenUssd = async (url, transaction) => {
+    try {
+        const response = await axios.post(url, {
+            webhook_secret: process.env.WEBHOOK_SECRET,
+            reference: transaction.reference,
+            mobile_no: transaction.receiverPhoneNumber,
+            merchant_id: process.env.MERCHANT_ID,
+            webhook_url: process.env.WEBHOOK_URL
+        }, {
+                headers: {
+                    Authorization: `Bearer ${process.env.MERCHANT_SECRET}`
+                }
+            }
+        );
+
+        return response;
     } catch (error) {
         console.error(error);
     }

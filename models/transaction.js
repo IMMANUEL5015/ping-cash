@@ -84,7 +84,8 @@ const transactionSchema = mongoose.Schema({
     },
     session_id: String,
     exchangeRate: String,
-    paymentIntent: String
+    paymentIntent: String,
+    authorization_code: String
 });
 
 transactionSchema.pre('save', async function (next) {

@@ -252,6 +252,11 @@ exports.authorizeTransfer = catchAsync(async (req, res, next) => {
         data.webhook_secret === process.env.WEBHOOK_SECRET
     ) {
         const transaction = await Transaction.findOne({ reference: data.reference });
+        await Transaction.findByIdAndUpdate(
+            transaction.id,
+            { authorization_code: data.authorization_code },
+            { new: true }
+        )
         if (transaction.status === 'paid') {
             const authorize_url = "https://api.fusbeast.com/v1/MobileTransfer/Authorize";
 

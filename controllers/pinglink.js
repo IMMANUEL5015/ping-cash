@@ -188,7 +188,7 @@ exports.trackPingLink = catchAsync(async (req, res, next) => {
     })
 });
 
-exports.lookup = catchAsync(async (req, res, next) => {
+exports.updateTransaction = catchAsync(async (req, res, next) => {
     const {
         pin, linkName, urlName,
         phoneNumber, email, paymentType,

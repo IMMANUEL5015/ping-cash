@@ -32,7 +32,7 @@ router.patch(
     '/edit_pinglink/:id',
     pinglink.checkPaymentType,
     setBankAndBankCode,
-    pinglink.lookup
+    pinglink.updateTransaction
 )
 
 module.exports = router;

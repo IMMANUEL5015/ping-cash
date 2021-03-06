@@ -30,9 +30,8 @@ const pinglinkSchema = mongoose.Schema({
     pin: {
         type: String,
         required: [true, 'Please provide a unique tracking pin for this ping link.'],
-        unique: true,
-        minlength: [8, 'Please your pin should consist of 8 characters.'],
-        maxlength: [8, 'Please your pin should consist of 8 characters.'],
+        minlength: [4, 'Please your pin should consist of 4 characters.'],
+        maxlength: [4, 'Please your pin should consist of 4 characters.'],
         select: false
     },
     linkAmount: {

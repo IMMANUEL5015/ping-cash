@@ -6,7 +6,7 @@ const AppError = require('../utils/appError');
 const sendEmail = require('../utils/email');
 const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_TEST_SECRET);
-const { error } = require('../utils/responses');
+const { error, success } = require('../utils/responses');
 
 exports.checkPaymentType = catchAsync(async (req, res, next) => {
     const { paymentType, minimumAmount, linkAmount } = req.body;
@@ -186,4 +186,38 @@ exports.trackPingLink = catchAsync(async (req, res, next) => {
             linkTransactions
         }
     })
+});
+
+exports.lookup = catchAsync(async (req, res, next) => {
+    const {
+        pin, linkName, urlName,
+        phoneNumber, email, paymentType,
+        minimumAmount, pin, linkAmount,
+        accountNumber, bankName, bankSortCode,
+        thankYouMessage, redirectUrl, linkUrl
+    } = req.body;
+    if (!pin) return next(new AppError('Please enter the pin.', 400));
+
+    let pinglink = await PingLink.findOne({ _id: req.params.id, pin });
+
+    if (!pinglink) return next(new AppError('The resource you are looking for cannot be found.', 400));
+
+    if (linkName) pinglink.linkName = linkName;
+    if (urlName) pinglink.urlName = urlName;
+    if (phoneNumber) pinglink.phoneNumber = phoneNumber;
+    if (email) pinglink.email = email;
+    if (paymentType) pinglink.paymentType = paymentType;
+    if (minimumAmount) pinglink.minimumAmount = minimumAmount;
+    if (pin) pinglink.pin = pin;
+    if (linkAmount) pinglink.linkAmount = linkAmount;
+    if (accountNumber) pinglink.accountNumber = accountNumber;
+    if (bankName) pinglink.bankName = bankName;
+    if (bankSortCode) pinglink.bankSortCode = bankSortCode;
+    if (redirectUrl) pinglink.redirectUrl = redirectUrl;
+    if (thankYouMessage) pinglink.thankYouMessage = thankYouMessage;
+    if (linkUrl) pinglink.linkUrl = linkUrl;
+
+    pinglink = await pinglink.save();
+
+    return success(res, 200, 'Success', 'Pinglink updated successfully.', pinglink);
 });

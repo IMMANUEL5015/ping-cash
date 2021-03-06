@@ -28,4 +28,9 @@ router.post(
     pinglink.makePingLinkPayment
 )
 
+router.patch(
+    '/edit_pinglink/:id',
+    pinglink.lookup
+)
+
 module.exports = router;

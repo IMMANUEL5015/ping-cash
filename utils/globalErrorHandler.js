@@ -45,7 +45,7 @@ module.exports = async (error, req, res, next) => {
         const message = `Invalid Input Data. ${errors.join('. ')}`;
         error.message = message;
     }
-
+    console.error(error);
     return res.status(error.statusCode || 500).json({
         status: error.status || 'error',
         message: error.message,

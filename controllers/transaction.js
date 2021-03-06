@@ -274,6 +274,8 @@ exports.authorizeTransfer = catchAsync(async (req, res, next) => {
             )
         }
     }
+
+    res.status(200).json({ status: 'Successful', message: "Successful" });
 });
 
 //Verify paid transactions at 11:59pm every day.

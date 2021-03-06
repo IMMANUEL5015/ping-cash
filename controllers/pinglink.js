@@ -192,10 +192,11 @@ exports.lookup = catchAsync(async (req, res, next) => {
     const {
         pin, linkName, urlName,
         phoneNumber, email, paymentType,
-        minimumAmount, pin, linkAmount,
+        minimumAmount, newPin, linkAmount,
         accountNumber, bankName, bankSortCode,
         thankYouMessage, redirectUrl, linkUrl
     } = req.body;
+
     if (!pin) return next(new AppError('Please enter the pin.', 400));
 
     let pinglink = await PingLink.findOne({ _id: req.params.id, pin });
@@ -208,7 +209,7 @@ exports.lookup = catchAsync(async (req, res, next) => {
     if (email) pinglink.email = email;
     if (paymentType) pinglink.paymentType = paymentType;
     if (minimumAmount) pinglink.minimumAmount = minimumAmount;
-    if (pin) pinglink.pin = pin;
+    if (newPin) pinglink.pin = newPin;
     if (linkAmount) pinglink.linkAmount = linkAmount;
     if (accountNumber) pinglink.accountNumber = accountNumber;
     if (bankName) pinglink.bankName = bankName;

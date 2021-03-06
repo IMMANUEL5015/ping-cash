@@ -30,6 +30,8 @@ router.post(
 
 router.patch(
     '/edit_pinglink/:id',
+    pinglink.checkPaymentType,
+    setBankAndBankCode,
     pinglink.lookup
 )
 

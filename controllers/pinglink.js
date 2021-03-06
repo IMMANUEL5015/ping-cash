@@ -33,17 +33,17 @@ exports.checkPaymentType = catchAsync(async (req, res, next) => {
     return next();
 });
 
-exports.preventDuplicatePin = catchAsync(async (req, res, next) => {
-    const { pin } = req.body;
+// exports.preventDuplicatePin = catchAsync(async (req, res, next) => {
+//     const { pin } = req.body;
 
-    if (pin) {
-        const existingPingLink = await PingLink.findOne({ pin });
-        if (existingPingLink)
-            return error(res, 200, 'Fail', 'Pin Already Exists!');
-    }
+//     if (pin) {
+//         const existingPingLink = await PingLink.findOne({ pin });
+//         if (existingPingLink)
+//             return error(res, 200, 'Fail', 'Pin Already Exists!');
+//     }
 
-    return next();
-});
+//     return next();
+// });
 
 exports.createPingLink = catchAsync(async (req, res, next) => {
     const urlName = randomString({ length: 8, numeric: true });

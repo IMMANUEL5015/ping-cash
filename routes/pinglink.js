@@ -10,6 +10,11 @@ router.post(
     pinglink.createPingLink
 )
 
+router.get(
+    '/failed',
+    pinglink.getFailedTransactions
+)
+
 router.post(
     '/track_ping_link/',
     pinglink.trackPingLink

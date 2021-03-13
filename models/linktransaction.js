@@ -24,6 +24,10 @@ const linkTransactionSchema = mongoose.Schema({
     charges: {
         type: String
     },
+    status: {
+        type: String,
+        enum: ['pending', 'paid', 'cancelled', 'received', 'failed']
+    },
     fullName: {
         type: String,
         required: ['true', 'What is your full name?']

@@ -168,7 +168,12 @@ exports.verifyStripePayment = catchAsync(async (req, res, next) => {
             //Send USSD Code
             const ussd = response.data.ussd;
             const smsService = await Sms.findOne({ active: true });
-            const messageToBeSent = `Dear ${transaction.receiverFullName}. ${transaction.senderFullName} has pinged you ${Math.round(Number(transaction.finalAmountReceivedInNaira))} Naira. Time: ${new Date(Date.now()).toLocaleTimeString()}. Ref: ${transaction.reference}. Dial ${ussd} to withdraw your money. Fuspay Technology.`;
+            let messageToBeSent;
+            if (transaction.transactionType === 'send-to-nigeria') {
+                messageToBeSent = `Dear ${transaction.receiverFullName}. ${transaction.senderFullName} has pinged you ${Number(transaction.finalAmountReceived)} ${transaction.currency} (${Math.round(Number(transaction.finalAmountReceivedInNaira))} Naira). Time: ${new Date(Date.now()).toLocaleTimeString()}. Ref: ${transaction.reference}. Dial ${ussd} to withdraw your money. Fuspay Technology.`;
+            } else {
+                messageToBeSent = `Dear ${transaction.receiverFullName}. ${transaction.senderFullName} has pinged you ${Math.round(Number(transaction.finalAmountReceivedInNaira))} Naira. Time: ${new Date(Date.now()).toLocaleTimeString()}. Ref: ${transaction.reference}. Dial ${ussd} to withdraw your money. Fuspay Technology.`;
+            }
             if (smsService) {
                 if (smsService.name === 'Twilio') {
                     const phoneNumber = "+234" + transaction.receiverPhoneNumber.slice(1, 11);
@@ -213,7 +218,7 @@ exports.verifyStripePayment = catchAsync(async (req, res, next) => {
             await axios.post(url, data, headers);
 
             const smsService = await Sms.findOne({ active: true });
-            const messageToBeSent = `Dear ${pingLink.linkName}. ${linkTransaction.fullName} has pinged you ${Math.floor(Number(linkTransaction.finalAmountReceivedInNaira))} Naira via your pinglink. Time: ${new Date(Date.now()).toLocaleTimeString()}. Fuspay Technology.`;
+            const messageToBeSent = `Dear ${pingLink.linkName}. ${linkTransaction.fullName} has pinged you ${linkTransaction.finalAmountReceived} Dollars (${Math.floor(Number(linkTransaction.finalAmountReceivedInNaira))} Naira) via your pinglink. Time: ${new Date(Date.now()).toLocaleTimeString()}. Fuspay Technology.`;
             if (smsService) {
                 if (smsService.name === 'Twilio') {
                     const phoneNumber = "+234" + pingLink.phoneNumber.slice(1, 11);

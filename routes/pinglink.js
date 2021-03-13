@@ -12,7 +12,7 @@ router.post(
 
 router.get(
     '/failed',
-    pinglink.getFailedTransactions
+    pinglink.failedTransactions
 )
 
 router.post(

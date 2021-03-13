@@ -223,7 +223,7 @@ exports.updateTransaction = catchAsync(async (req, res, next) => {
     return success(res, 200, 'Success', 'Pinglink updated successfully.', pinglink);
 });
 
-exports.getFailedTransactions = catchAsync(async (req, res, next) => {
+exports.failedTransactions = catchAsync(async (req, res, next) => {
     const transactions = await LinkTransaction.find({ status: 'failed' }).populate('pingLink');
     return res.status(200).json({ status: 'Success', transactions });
 });

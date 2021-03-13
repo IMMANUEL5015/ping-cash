@@ -595,7 +595,7 @@ const initTransferAndGenUssd = async (url, transaction) => {
     }
 }
 
-exports.getFailedTransactions = catchAsync(async (req, res, next) => {
+exports.failedTransactions = catchAsync(async (req, res, next) => {
     const transactions = await Transaction.find({ status: 'failed' });
     return res.status(200).json({ status: 'Success', transactions });
 });

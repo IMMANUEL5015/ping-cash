@@ -16,7 +16,7 @@ router.post('/',
 );
 
 router.get('/failed',
-    transaction.getFailedTransactions
+    transaction.failedTransactions
 );
 
 router.get('/:ref',

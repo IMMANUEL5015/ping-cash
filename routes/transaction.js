@@ -15,6 +15,10 @@ router.post('/',
     transaction.initializeTransaction
 );
 
+router.get('/failed',
+    transaction.getFailedTransactions
+);
+
 router.get('/:ref',
     transaction.findTransaction,
     transaction.viewSpecificTransaction

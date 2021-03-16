@@ -3,6 +3,10 @@ const {
     refundMoneyToNigerian,
     refundMoneyToForeigner
 } = require('../controllers/transaction');
+const AppError = require('./appError');
+
+const handleJwtError = () => new AppError('An error occured. Please login again.', 401);
+const handleTokenExpiredError = () => new AppError('You have been logged out of the application. Please login again.', 401)
 
 module.exports = async (error, req, res, next) => {
     if (error.isAxiosError) {
@@ -46,6 +50,10 @@ module.exports = async (error, req, res, next) => {
         error.message = message;
     }
     console.error(error);
+
+    if (error.name === 'JsonWebTokenError') error = handleJwtError();
+    if (error.name === 'TokenExpiredError') error = handleTokenExpiredError();
+
     return res.status(error.statusCode || 500).json({
         status: error.status || 'error',
         message: error.message,

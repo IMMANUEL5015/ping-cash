@@ -86,3 +86,16 @@ exports.protect = catchAsync(async (req, res, next) => {
     req.user = currentUser;
     next();
 });
+
+
+exports.logout = (req, res) => {
+    const token = jwt.sign({ id: req.user.id }, process.env.SECRET, {
+        expiresIn: '1s'
+    })
+
+    res.status(200).json({
+        status: 'success',
+        message: 'You have been logged out successfully.',
+        token
+    });
+}

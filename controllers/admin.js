@@ -43,3 +43,19 @@ exports.register = catchAsync(async (req, res, next) => {
 
     return createSendToken(newUser, 201, req, res);
 });
+
+exports.login = catchAsync(async (req, res, next) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return next(new AppError('Please provide your email address and password', 400));
+    }
+
+    const user = await User.findOne({ email }).select('+password');
+
+    if (!user || !(await user.correctPassword(password, user.password))) {
+        return next(new AppError(`Incorrect email or password. If you have forgotten your password, please click on the forgot password link.`, 401));
+    }
+
+    createSendToken(user, 200, req, res);
+});

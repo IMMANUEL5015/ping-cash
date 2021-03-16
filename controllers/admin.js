@@ -1,3 +1,4 @@
+const { promisify } = require('util');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const jwt = require('jsonwebtoken');
@@ -58,4 +59,30 @@ exports.login = catchAsync(async (req, res, next) => {
     }
 
     createSendToken(user, 200, req, res);
+});
+
+exports.protect = catchAsync(async (req, res, next) => {
+    let token;
+
+    //1. Check if token is available
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+        token = req.headers.authorization.split(' ')[1];
+    } else if (req.cookies.jwt) {
+        token = req.cookies.jwt;
+    }
+
+    if (!token) return next(new AppError('Please login to gain access to this resource', 401));
+
+    //2. Verify the token
+    const decoded = await promisify(jwt.verify)(token, process.env.SECRET);
+
+    //3. Check if the owner of the token still exists
+    const currentUser = await User.findById(decoded.id);
+    if (!currentUser) {
+        return next(new AppError('The owner of the login credentials no longer exists.', 401));
+    }
+
+    //Grant access to protected route
+    req.user = currentUser;
+    next();
 });

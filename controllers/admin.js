@@ -3,6 +3,8 @@ const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+const Transaction = require('../models/transaction');
+const { create, findAll, find, seeData, update, deleteOne } = require('../utils/crud');
 
 const signToken = id => {
     return jwt.sign({ id }, process.env.SECRET, {
@@ -98,4 +100,14 @@ exports.logout = (req, res) => {
         message: 'You have been logged out successfully.',
         token
     });
+}
+
+exports.viewInternationalTransactions = catchAsync(async (req, res, next) => {
+    const transactions = await Transaction.find({ transactionType: 'send-to-nigeria' });
+    return res.status(200).json({ status: 'Success', transactions });
+});
+
+exports.findInternationalTransaction = find(Transaction);
+exports.viewInternationalTransaction = (req, res, next) => {
+    return res.status(200).json({ status: 'Success', transaction: req.data });
 }

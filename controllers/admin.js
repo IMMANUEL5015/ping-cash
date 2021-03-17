@@ -164,3 +164,8 @@ exports.viewPinglink = catchAsync(async (req, res, next) => {
         }
     })
 });
+
+exports.findPinglinkTransaction = find(LinkTransaction);
+exports.viewPinglinkTransaction = (req, res, next) => {
+    return res.status(200).json({ status: 'Success', transaction: req.data });
+}

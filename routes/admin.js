@@ -29,4 +29,11 @@ router.get(
     admin.viewPinglink
 )
 
+router.get(
+    '/pinglinks/transactions/:id',
+    admin.protect,
+    admin.findPinglinkTransaction,
+    admin.viewPinglinkTransaction
+)
+
 module.exports = router;

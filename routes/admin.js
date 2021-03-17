@@ -15,10 +15,18 @@ router.get(
     admin.findInternationalTransaction,
     admin.viewInternationalTransaction
 );
+
 router.get(
     '/pinglinks',
     admin.protect,
     admin.viewAllPinglinks
+)
+
+router.get(
+    '/pinglinks/:id',
+    admin.protect,
+    admin.findPinglink,
+    admin.viewPinglink
 )
 
 module.exports = router;

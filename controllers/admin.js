@@ -114,6 +114,26 @@ exports.viewInternationalTransaction = (req, res, next) => {
     return res.status(200).json({ status: 'Success', transaction: req.data });
 }
 
+const pingLinkStats = async (pinglink) => {
+    const linkTransactions = await LinkTransaction.find({
+        pingLink: pinglink.id, status: 'paid'
+    });
+
+    const obj = {};
+
+    obj.linkUrl = pinglink.linkUrl;
+    obj.totalTransactions = linkTransactions.length;
+    obj.description = pinglink.linkName;
+    obj.date = pinglink.createdAt.toDateString();
+
+    let amount = 0;
+    linkTransactions.map(transaction => amount = amount + Number(transaction.amount));
+    obj.totalAmount = amount;
+    obj.id = pinglink.id;
+
+    return obj;
+}
+
 exports.viewAllPinglinks = catchAsync(async (req, res, next) => {
     const allPinglinks = await PingLink.find({});
 
@@ -121,23 +141,26 @@ exports.viewAllPinglinks = catchAsync(async (req, res, next) => {
 
     for (let i = 0; i < allPinglinks.length; i++) {
         const pinglink = allPinglinks[i];
-        const linkTransactions = await LinkTransaction.find({
-            pingLink: pinglink.id, status: 'paid'
-        });
-
-        const obj = {};
-
-        obj.linkUrl = pinglink.linkUrl;
-        obj.totalTransactions = linkTransactions.length;
-        obj.description = pinglink.linkName;
-        obj.date = pinglink.createdAt.toDateString();
-
-        let amount = 0;
-        linkTransactions.map(transaction => amount = amount + Number(transaction.amount));
-        obj.totalAmount = amount;
+        const obj = await pingLinkStats(pinglink);
 
         pinglinks.push(obj);
     }
 
     return res.status(200).json({ status: 'Success', pinglinks });
+});
+
+
+exports.findPinglink = find(PingLink);
+exports.viewPinglink = catchAsync(async (req, res, next) => {
+    const linkTransactions = await LinkTransaction.find({ pingLink: req.data.id });
+    const stats = await pingLinkStats(req.data);
+
+    return res.status(200).json({
+        status: 'Success',
+        data: {
+            stats,
+            pingLink: req.data,
+            linkTransactions
+        }
+    })
 });

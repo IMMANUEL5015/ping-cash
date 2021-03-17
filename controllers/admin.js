@@ -5,6 +5,8 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const Transaction = require('../models/transaction');
 const { create, findAll, find, seeData, update, deleteOne } = require('../utils/crud');
+const PingLink = require('../models/pinglink');
+const LinkTransaction = require('../models/linktransaction');
 
 const signToken = id => {
     return jwt.sign({ id }, process.env.SECRET, {
@@ -111,3 +113,31 @@ exports.findInternationalTransaction = find(Transaction);
 exports.viewInternationalTransaction = (req, res, next) => {
     return res.status(200).json({ status: 'Success', transaction: req.data });
 }
+
+exports.viewAllPinglinks = catchAsync(async (req, res, next) => {
+    const allPinglinks = await PingLink.find({});
+
+    const pinglinks = [];
+
+    for (let i = 0; i < allPinglinks.length; i++) {
+        const pinglink = allPinglinks[i];
+        const linkTransactions = await LinkTransaction.find({
+            pingLink: pinglink.id, status: 'paid'
+        });
+
+        const obj = {};
+
+        obj.linkUrl = pinglink.linkUrl;
+        obj.totalTransactions = linkTransactions.length;
+        obj.description = pinglink.linkName;
+        obj.date = pinglink.createdAt.toDateString();
+
+        let amount = 0;
+        linkTransactions.map(transaction => amount = amount + Number(transaction.amount));
+        obj.totalAmount = amount;
+
+        pinglinks.push(obj);
+    }
+
+    return res.status(200).json({ status: 'Success', pinglinks });
+});

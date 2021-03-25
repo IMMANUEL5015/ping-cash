@@ -1,5 +1,8 @@
 const router = require('express').Router();
 const creditRate = require('../controllers/creditRate');
+const admin = require('../controllers/admin');
+
+router.use(admin.protect);
 
 router.post('/',
     creditRate.createCreditRate);

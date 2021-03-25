@@ -27,6 +27,8 @@ const pinglinkSchema = mongoose.Schema({
         default: "fixed"
     },
     minimumAmount: String,
+    numOfLinkTransactions: { type: Number, default: 0 },
+    totalAmountOfPaidLinkTransactions: { tpe: Number, default: 0 },
     pin: {
         type: String,
         required: [true, 'Please provide a unique tracking pin for this ping link.'],

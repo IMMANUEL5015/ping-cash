@@ -115,21 +115,18 @@ exports.viewInternationalTransaction = (req, res, next) => {
 }
 
 const pingLinkStats = async (pinglink) => {
-    const linkTransactions = await LinkTransaction.find({
-        pingLink: pinglink.id, status: 'paid'
-    });
-
     const obj = {};
+    const {
+        linkUrl, numOfLinkTransactions,
+        linkName, createdAt, totalAmountOfPaidLinkTransactions, _id
+    } = pinglink;
 
-    obj.linkUrl = pinglink.linkUrl;
-    obj.totalTransactions = linkTransactions.length;
-    obj.description = pinglink.linkName;
-    obj.date = pinglink.createdAt.toDateString();
-
-    let amount = 0;
-    linkTransactions.map(transaction => amount = amount + Number(transaction.amount));
-    obj.totalAmount = amount;
-    obj.id = pinglink.id;
+    obj.linkUrl = linkUrl;
+    obj.totalTransactions = numOfLinkTransactions;
+    obj.description = linkName;
+    obj.date = createdAt.toDateString();
+    obj.totalAmount = totalAmountOfPaidLinkTransactions;
+    obj.id = _id;
 
     return obj;
 }

@@ -204,6 +204,10 @@ exports.verifyStripePayment = async (req, res, next) => {
                     }
                 }
             } else if (linkTransaction && pingLink) {
+                await LinkTransaction.findByIdAndUpdate(linkTransaction.id, {
+                    status: 'paid'
+                }, { new: true })
+
                 const url = 'https://api.fusbeast.com/v1/Transfer/Initiate';
                 const data = {
                     "pin": process.env.PIN,
@@ -310,7 +314,11 @@ exports.authorizeTransfer = async (req, res, next) => {
 //Verify paid transactions at 11:59pm every day.
 cron.schedule('59 23 * * *', async () => {
     try {
-        const transactions = await Transaction.find({ status: 'paid' });
+        let transactions = await Transaction.find({ status: 'paid' });
+        let linkTransactions = await LinkTransaction.find({ status: 'paid' });
+
+        transactions = transactions.concat(linkTransactions);
+
         for (let i = 0; i < transactions.length; i++) {
             const transaction = transactions[i];
 
@@ -326,9 +334,37 @@ cron.schedule('59 23 * * *', async () => {
                     data && data.success === true && data.payment_status === "SUCCESS" &&
                     data.status === "SUCCESS" && data.transactionDescription === "Approved or completed successfully"
                 ) {
-                    await Transaction.findByIdAndUpdate(transaction.id, { status: 'received' }, {
-                        new: true
-                    });
+                    const normalTransaction = await Transaction.findById(transaction.id);
+                    if (normalTransaction) {
+                        await Transaction.findByIdAndUpdate(
+                            transaction.id,
+                            { status: 'received' },
+                            {
+                                new: true
+                            });
+                    }
+
+                    const linkTransaction = await LinkTransaction.findById(transaction.id);
+                    if (linkTransaction) {
+                        await LinkTransaction.findByIdAndUpdate(
+                            transaction.id,
+                            { status: 'received' },
+                            { new: true }
+                        );
+
+                        const pingLink = await PingLink.findById(linkTransaction.pingLink);
+                        if (pingLink) {
+                            const { numOfLinkTransactions, totalAmountOfPaidLinkTransactions } = pingLink;
+                            await PingLink.findByIdAndUpdate(
+                                pingLink._id,
+                                {
+                                    numOfLinkTransactions: numOfLinkTransactions + 1,
+                                    totalAmountOfPaidLinkTransactions: totalAmountOfPaidLinkTransactions + Number(linkTransaction.finalAmountReceived)
+                                },
+                                { new: true }
+                            )
+                        }
+                    }
                 }
             }
         }

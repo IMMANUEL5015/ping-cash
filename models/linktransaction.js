@@ -26,7 +26,8 @@ const linkTransactionSchema = mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['pending', 'paid', 'cancelled', 'received', 'failed']
+        enum: ['pending', 'paid', 'received', 'failed'],
+        default: 'pending'
     },
     fullName: {
         type: String,

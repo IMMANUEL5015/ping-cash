@@ -505,7 +505,8 @@ exports.cancelTransaction = catchAsync(async (req, res, next) => {
     let { transaction } = req;
 
     if (
-        transaction.status === 'received' || transaction.status === 'cancelled'
+        transaction.status === 'received' || transaction.status === 'cancelled' ||
+        transaction.status === 'refunded'
     ) {
         return next(new AppError('You cannot cancel this transaction!', 403));
     }
@@ -574,9 +575,17 @@ exports.refundMoneyToNigerian = async (transaction) => {
 
 exports.refundMoneyToForeigner = async (transaction) => {
     try {
+        const { paymentIntent } = transaction;
         await stripe.refunds.create({
-            payment_intent: transaction.paymentIntent,
+            payment_intent: paymentIntent,
         });
+
+        await Transaction.findOneAndUpdate(
+            { paymentIntent },
+            { status: 'refunded' },
+            { new: true }
+        )
+
     } catch (error) {
         console.error(error);
     }
@@ -587,6 +596,24 @@ const verifyTransfer = async (url, transaction) => {
         const response = await axios.post(url, {
             merchant_id: process.env.MERCHANT_ID,
             reference: transaction.reference
+        }, {
+                headers: {
+                    Authorization: `Bearer ${process.env.MERCHANT_SECRET}`
+                }
+            }
+        );
+
+        if (response) return response;
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+const verifyTransferWithId = async (url, transaction) => {
+    try {
+        const response = await axios.post(url, {
+            merchant_id: process.env.MERCHANT_ID,
+            reference: transaction.id
         }, {
                 headers: {
                     Authorization: `Bearer ${process.env.MERCHANT_SECRET}`
@@ -634,4 +661,36 @@ const initTransferAndGenUssd = async (url, transaction) => {
 exports.failedTransactions = catchAsync(async (req, res, next) => {
     const transactions = await Transaction.find({ status: 'failed' });
     return res.status(200).json({ status: 'Success', transactions });
+});
+
+//Verify paid transactions at 9:59pm every day.
+cron.schedule('59 21 * * *', async () => {
+    try {
+        let transactions = await Transaction.find({ status: 'cancelled' });
+
+        for (let i = 0; i < transactions.length; i++) {
+            const transaction = transactions[i];
+
+            const url = 'https://api.fusbeast.com/v1/Transfer/Verify';
+
+            if (transaction) {
+                const response = await verifyTransferWithId(url, transaction);
+
+                let data;
+                if (response) data = response.data;
+
+                if (
+                    data && data.success === true && data.payment_status === "SUCCESS" &&
+                    data.status === "SUCCESS" && data.transactionDescription === "Approved or completed successfully"
+                ) {
+
+                    await Transaction.findByIdAndUpdate(
+                        transaction.id, { status: 'refunded' }, { new: true }
+                    )
+                }
+            }
+        }
+    } catch (error) {
+        console.error(error);
+    }
 });

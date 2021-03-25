@@ -109,6 +109,22 @@ exports.viewInternationalTransactions = catchAsync(async (req, res, next) => {
     return res.status(200).json({ status: 'Success', transactions });
 });
 
+exports.viewCancelledInternationalTransactions = catchAsync(async (req, res, next) => {
+    const transactions = await Transaction.find({
+        transactionType: 'send-to-nigeria',
+        status: 'cancelled'
+    });
+    return res.status(200).json({ status: 'Success', transactions });
+});
+
+exports.viewRefundedInternationalTransactions = catchAsync(async (req, res, next) => {
+    const transactions = await Transaction.find({
+        transactionType: 'send-to-nigeria',
+        status: 'refunded'
+    });
+    return res.status(200).json({ status: 'Success', transactions });
+});
+
 exports.findInternationalTransaction = find(Transaction);
 exports.viewInternationalTransaction = (req, res, next) => {
     return res.status(200).json({ status: 'Success', transaction: req.data });

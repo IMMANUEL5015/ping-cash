@@ -17,6 +17,18 @@ router.get(
 );
 
 router.get(
+    '/cancelled_international_transactions',
+    admin.protect,
+    admin.viewCancelledInternationalTransactions
+);
+
+router.get(
+    '/refunded_international_transactions',
+    admin.protect,
+    admin.viewRefundedInternationalTransactions
+);
+
+router.get(
     '/pinglinks',
     admin.protect,
     admin.viewAllPinglinks

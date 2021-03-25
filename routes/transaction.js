@@ -3,6 +3,7 @@ const transaction = require('../controllers/transaction');
 const { checkTransactionType, setForNigeria,
     setToNigeria, ensureReceiverIsNigerian
 } = require('../middlewares/transaction');
+const admin = require('../controllers/admin');
 
 const { setBankAndBankCode } = require('../middlewares/general');
 
@@ -16,6 +17,7 @@ router.post('/',
 );
 
 router.get('/failed',
+    admin.protect,
     transaction.failedTransactions
 );
 

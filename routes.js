@@ -9,8 +9,10 @@ const smsRouter = require('./routes/sms');
 const globalErrorHandler = require('./utils/globalErrorHandler');
 const currencyController = require('./controllers/currency');
 const adminRouter = require('./routes/admin');
+const pcategoryRouter = require('./routes/pcategory');
 
 router.use('/admin', adminRouter);
+router.use('/pcategories', pcategoryRouter);
 router.use('/transactions', transactionRouter);
 router.use('/pinglinks', pinglinkRouter);
 router.use('/charge-rates', chargeRateRouter);

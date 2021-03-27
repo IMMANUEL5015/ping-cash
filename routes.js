@@ -11,10 +11,12 @@ const currencyController = require('./controllers/currency');
 const adminRouter = require('./routes/admin');
 const pcategoryRouter = require('./routes/pcategory');
 const privilegeRouter = require('./routes/privilege');
+const roleRouter = require('./routes/role');
 
 router.use('/admin', adminRouter);
 router.use('/pcategories', pcategoryRouter);
 router.use('/privileges', privilegeRouter);
+router.use('/roles', roleRouter);
 router.use('/transactions', transactionRouter);
 router.use('/pinglinks', pinglinkRouter);
 router.use('/charge-rates', chargeRateRouter);

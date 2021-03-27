@@ -7,16 +7,14 @@ const AppError = require('../utils/appError');
 const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_TEST_SECRET);
 const axios = require('axios');
-const Sms = require('../models/sms');
 const sendSms = require('../utils/sms');
 const email = require('../utils/email');
-
-const customerId = process.env.TELESIGN_CUSTOMER_ID;
-const apiKey = process.env.TELESIGN_API_KEY;
-const rest_endpoint = "https://rest-api.telesign.com";
-const timeout = 10 * 1000; // 10 secs
-
 const cron = require('node-cron');
+const {
+    verifyPaymentToFuspay, verifyTransfer,
+    verifyTransferWithId, initTransferAndGenUssd,
+    payPinglinkCreator
+} = require('../utils/fuspay_apis');
 
 exports.initializeTransaction = catchAsync(async (req, res, next) => {
     const uniqueString = randomString({ length: 26, numeric: true });
@@ -154,103 +152,30 @@ exports.verifyStripePayment = async (req, res, next) => {
 
                 //Initiate Transfer and Generate USSD Code
                 const url = 'https://api.fusbeast.com/v1/MobileTransfer/Initiate';
-                const response = await axios.post(url, {
-                    webhook_secret: process.env.WEBHOOK_SECRET,
-                    reference: transaction.reference,
-                    mobile_no: transaction.receiverPhoneNumber,
-                    merchant_id: process.env.MERCHANT_ID,
-                    webhook_url: process.env.WEBHOOK_URL
-                }, {
-                        headers: {
-                            Authorization: `Bearer ${process.env.MERCHANT_SECRET}`
-                        }
-                    }
-                );
+                const response = await initTransferAndGenUssd(url, transaction);
 
                 //Send USSD Code
                 const ussd = response.data.ussd;
-                const smsService = await Sms.findOne({ active: true });
                 let messageToBeSent;
                 if (transaction.transactionType === 'send-to-nigeria') {
                     messageToBeSent = `Dear ${transaction.receiverFullName}. ${transaction.senderFullName} has pinged you ${Number(transaction.finalAmountReceived)} ${transaction.currency} (${Math.round(Number(transaction.finalAmountReceivedInNaira))} Naira). Time: ${new Date(Date.now()).toLocaleTimeString()}. Ref: ${transaction.reference}. Dial ${ussd} to withdraw your money. Fuspay Technology.`;
                 } else {
                     messageToBeSent = `Dear ${transaction.receiverFullName}. ${transaction.senderFullName} has pinged you ${Math.round(Number(transaction.finalAmountReceivedInNaira))} Naira. Time: ${new Date(Date.now()).toLocaleTimeString()}. Ref: ${transaction.reference}. Dial ${ussd} to withdraw your money. Fuspay Technology.`;
                 }
-                if (smsService) {
-                    if (smsService.name === 'Twilio') {
-                        const phoneNumber = "+234" + transaction.receiverPhoneNumber.slice(1, 11);
-                        const body = messageToBeSent;
-                        await sendSms.sendWithTwilio(body, phoneNumber);
-                    }
-
-                    if (smsService.name === 'Telesign') {
-                        const message = messageToBeSent;
-                        const messageCallback = function messageCallback(error, responseBody) {
-                            if (error === null) {
-                                console.log('Telesign Messaging Successful.')
-                            } else {
-                                console.error('Error in Telesign Messaging');
-                            }
-                        }
-
-                        const phoneNumber = "+234" + transaction.receiverPhoneNumber.slice(1, 11);
-                        await sendSms.sendWithTelesign(customerId, apiKey, rest_endpoint, timeout, phoneNumber, message, 'ARN', messageCallback);
-                    }
-
-                    if (smsService.name === 'Termii') {
-                        const sms = messageToBeSent;
-                        const phoneNumber = "+234" + transaction.receiverPhoneNumber.slice(1, 11);
-                        await sendSms.sendWithTermi(phoneNumber, sms);
-                    }
-                }
+                const phoneNumber = "+234" + transaction.receiverPhoneNumber.slice(1, 11);
+                const body = messageToBeSent;
+                await sendSms.sendWithTwilio(body, phoneNumber);
             } else if (linkTransaction && pingLink) {
                 await LinkTransaction.findByIdAndUpdate(linkTransaction.id, {
                     status: 'paid'
                 }, { new: true })
 
-                const url = 'https://api.fusbeast.com/v1/Transfer/Initiate';
-                const data = {
-                    "pin": process.env.PIN,
-                    "narration": "Money Transfer Via PingLink.",
-                    "account_number": pingLink.accountNumber,
-                    "bank_code": pingLink.bankSortCode,
-                    "to": "bank",
-                    "amount": `${Math.floor(Number(linkTransaction.finalAmountReceivedInNaira))}`,
-                    reference: linkTransaction.id,
-                    "merchant_id": process.env.MERCHANT_ID
-                };
-                const headers = { headers: { Authorization: `Bearer ${process.env.MERCHANT_SECRET}` } };
-
-                await axios.post(url, data, headers);
-
-                const smsService = await Sms.findOne({ active: true });
-                const messageToBeSent = `Dear ${pingLink.linkName}. ${linkTransaction.fullName} has pinged you ${linkTransaction.finalAmountReceived} Dollars (${Math.floor(Number(linkTransaction.finalAmountReceivedInNaira))} Naira) via your pinglink. Time: ${new Date(Date.now()).toLocaleTimeString()}. Fuspay Technology.`;
-                if (smsService) {
-                    if (smsService.name === 'Twilio') {
-                        const phoneNumber = "+234" + pingLink.phoneNumber.slice(1, 11);
-                        const body = messageToBeSent;
-                        await sendSms.sendWithTwilio(body, phoneNumber);
-                    }
-
-                    if (smsService.name === 'Telesign') {
-                        const message = messageToBeSent;
-                        const messageCallback = function messageCallback(error, responseBody) {
-                            if (error === null) {
-                                console.log('Telesign Messaging Successful.')
-                            } else {
-                                console.error('Error in Telesign Messaging');
-                            }
-                        }
-
-                        const phoneNumber = "+234" + pingLink.phoneNumber.slice(1, 11);
-                        await sendSms.sendWithTelesign(customerId, apiKey, rest_endpoint, timeout, phoneNumber, message, 'ARN', messageCallback);
-                    }
-
-                    if (smsService.name === 'Termii') {
-                        const sms = messageToBeSent;
-                        const phoneNumber = "+234" + pingLink.phoneNumber.slice(1, 11);
-                        await sendSms.sendWithTermi(phoneNumber, sms);
-                    }
+                const response = await payPinglinkCreator(pingLink, linkTransaction);
+                if (response) {
+                    const messageToBeSent = `Dear ${pingLink.linkName}. ${linkTransaction.fullName} has pinged you ${linkTransaction.finalAmountReceived} Dollars (${Math.floor(Number(linkTransaction.finalAmountReceivedInNaira))} Naira) via your pinglink. Time: ${new Date(Date.now()).toLocaleTimeString()}. Fuspay Technology.`;
+                    const phoneNumber = "+234" + pingLink.phoneNumber.slice(1, 11);
+                    const body = messageToBeSent;
+                    await sendSms.sendWithTwilio(body, phoneNumber);
                 }
             }
         }
@@ -406,7 +331,11 @@ cron.schedule('*/5 * * * *', async () => {
             const url = `https://api.fusbeast.com/checkout-status/${reference}`;
             const data = await verifyPaymentToFuspay(url);
 
-            if (data && data.status === 'PAID' && data.success && data.message === 'Successful' && !data.error) {
+            if (
+                data && data.status === 'PAID' &&
+                data.success && data.message === 'Successful'
+                && !data.error
+            ) {
                 await Transaction.findOneAndUpdate(
                     { reference },
                     { status: 'paid' },
@@ -421,35 +350,10 @@ cron.schedule('*/5 * * * *', async () => {
                 let ussd;
                 if (response) ussd = response.data.ussd;
                 if (ussd) {
-                    const smsService = await Sms.findOne({ active: true });
                     const messageToBeSent = `Dear ${transaction.receiverFullName}. ${transaction.senderFullName} has pinged you ${Math.round(Number(transaction.finalAmountReceivedInNaira))} Naira. Time: ${new Date(Date.now()).toLocaleTimeString()}. Ref: ${transaction.reference}. Dial ${ussd} to withdraw your money. Fuspay Technology.`;
-                    if (smsService) {
-                        if (smsService.name === 'Twilio') {
-                            const phoneNumber = "+234" + transaction.receiverPhoneNumber.slice(1, 11);
-                            const body = messageToBeSent;
-                            await sendSms.sendWithTwilio(body, phoneNumber);
-                        }
-                        if (smsService.name === 'Telesign') {
-
-                            const message = messageToBeSent;
-                            const messageCallback = function messageCallback(error, responseBody) {
-                                if (error === null) {
-                                    console.log('Telesign Messaging Successful.')
-                                } else {
-                                    console.error('Error in Telesign Messaging');
-                                }
-                            }
-
-                            const phoneNumber = "+234" + transaction.receiverPhoneNumber.slice(1, 11);
-                            await sendSms.sendWithTelesign(customerId, apiKey, rest_endpoint, timeout, phoneNumber, message, 'ARN', messageCallback);
-                        }
-
-                        if (smsService.name === 'Termii') {
-                            const sms = messageToBeSent;
-                            const phoneNumber = "+234" + transaction.receiverPhoneNumber.slice(1, 11);
-                            await sendSms.sendWithTermi(phoneNumber, sms);
-                        }
-                    }
+                    const phoneNumber = "+234" + transaction.receiverPhoneNumber.slice(1, 11);
+                    const body = messageToBeSent;
+                    await sendSms.sendWithTwilio(body, phoneNumber);
                 }
             }
         }
@@ -549,6 +453,7 @@ exports.cancelTransaction = catchAsync(async (req, res, next) => {
 });
 
 exports.refundMoneyToNigerian = async (transaction) => {
+    //Handle failed refunds later on
     try {
         const {
             finalAmountPaid, accountNumberForRefund, bankSortCode
@@ -586,73 +491,6 @@ exports.refundMoneyToForeigner = async (transaction) => {
             { new: true }
         )
 
-    } catch (error) {
-        console.error(error);
-    }
-}
-
-const verifyTransfer = async (url, transaction) => {
-    try {
-        const response = await axios.post(url, {
-            merchant_id: process.env.MERCHANT_ID,
-            reference: transaction.reference
-        }, {
-                headers: {
-                    Authorization: `Bearer ${process.env.MERCHANT_SECRET}`
-                }
-            }
-        );
-
-        if (response) return response;
-    } catch (error) {
-        console.error(error);
-    }
-}
-
-const verifyTransferWithId = async (url, transaction) => {
-    try {
-        const response = await axios.post(url, {
-            merchant_id: process.env.MERCHANT_ID,
-            reference: transaction.id
-        }, {
-                headers: {
-                    Authorization: `Bearer ${process.env.MERCHANT_SECRET}`
-                }
-            }
-        );
-
-        if (response) return response;
-    } catch (error) {
-        console.error(error);
-    }
-}
-
-const verifyPaymentToFuspay = async (url) => {
-    try {
-        const response = await axios.get(url);
-
-        if (response) return response.data;
-    } catch (error) {
-        console.error(error);
-    }
-}
-
-const initTransferAndGenUssd = async (url, transaction) => {
-    try {
-        const response = await axios.post(url, {
-            webhook_secret: process.env.WEBHOOK_SECRET,
-            reference: transaction.reference,
-            mobile_no: transaction.receiverPhoneNumber,
-            merchant_id: process.env.MERCHANT_ID,
-            webhook_url: process.env.WEBHOOK_URL
-        }, {
-                headers: {
-                    Authorization: `Bearer ${process.env.MERCHANT_SECRET}`
-                }
-            }
-        );
-
-        return response;
     } catch (error) {
         console.error(error);
     }

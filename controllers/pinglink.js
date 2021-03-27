@@ -122,11 +122,14 @@ exports.flexiblePayments = catchAsync(async (req, res, next) => {
 });
 
 exports.makePingLinkPayment = catchAsync(async (req, res, next) => {
+    const uniqueString = randomString({ length: 26, numeric: true });
+
     let pingLink = req.pingLink;
     const amount = req.amount;
 
     const linkTransaction = await LinkTransaction.create({
         pingLink,
+        reference: `PNG-${uniqueString}eq`,
         amount: amount ? amount : pingLink.linkAmount,
         fullName: req.body.fullName,
         email: req.body.email,

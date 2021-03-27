@@ -4,48 +4,49 @@ const admin = require('../controllers/admin');
 router.post('/register', admin.register)
 router.post('/login', admin.login);
 router.post('/logout', admin.protect, admin.logout);
+
+router.use(admin.protect);
+
 router.get(
     '/international_transactions',
-    admin.protect,
     admin.viewInternationalTransactions
 );
 router.get(
     '/international_transactions/:id',
-    admin.protect,
     admin.findInternationalTransaction,
     admin.viewInternationalTransaction
 );
 
 router.get(
     '/cancelled_international_transactions',
-    admin.protect,
     admin.viewCancelledInternationalTransactions
 );
 
 router.get(
     '/refunded_international_transactions',
-    admin.protect,
     admin.viewRefundedInternationalTransactions
 );
 
 router.get(
     '/pinglinks',
-    admin.protect,
     admin.viewAllPinglinks
 )
 
 router.get(
     '/pinglinks/:id',
-    admin.protect,
     admin.findPinglink,
     admin.viewPinglink
 )
 
 router.get(
     '/pinglinks/transactions/:id',
-    admin.protect,
     admin.findPinglinkTransaction,
     admin.viewPinglinkTransaction
 )
+
+router.post(
+    '/make_payout/:id',
+    admin.makePayout
+);
 
 module.exports = router;

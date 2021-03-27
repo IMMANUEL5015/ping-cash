@@ -41,6 +41,11 @@ const linkTransactionSchema = mongoose.Schema({
         type: String,
         required: [true, 'Please provide your phone number.']
     },
+    reference: {
+        type: String,
+        required: [true, 'Every transaction must have a unique reference.'],
+        unique: true
+    },
     createdAt: {
         type: Date,
         default: Date.now

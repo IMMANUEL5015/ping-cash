@@ -7,6 +7,13 @@ const Transaction = require('../models/transaction');
 const { create, findAll, find, seeData, update, deleteOne } = require('../utils/crud');
 const PingLink = require('../models/pinglink');
 const LinkTransaction = require('../models/linktransaction');
+const {
+    verifyPaymentToFuspay, verifyTransfer,
+    verifyTransferWithId, initTransferAndGenUssd,
+    payPinglinkCreator
+} = require('../utils/fuspay_apis');
+const sendSms = require('../utils/sms');
+const randomString = require('random-string');
 
 const signToken = id => {
     return jwt.sign({ id }, process.env.SECRET, {
@@ -182,3 +189,90 @@ exports.findPinglinkTransaction = find(LinkTransaction);
 exports.viewPinglinkTransaction = (req, res, next) => {
     return res.status(200).json({ status: 'Success', transaction: req.data });
 }
+
+exports.makePayout = catchAsync(async (req, res, next) => {
+    const { transactionType } = req.body;
+
+    if (!transactionType) {
+        return next(new AppError('Please specify the transaction type.', 400));
+    }
+
+    if (
+        transactionType !== 'send-to-nigeria' && transactionType !== 'send-within-nigeria' &&
+        transactionType !== 'pinglink-transaction'
+    ) {
+        return next(new AppError('The transaction type you specified is not valid.', 400));
+    }
+
+    let transaction;
+    let linkTransaction;
+
+    if (transactionType === 'send-to-nigeria' || transactionType === 'send-within-nigeria') {
+        transaction = await Transaction.findById(req.params.id);
+
+        if (!transaction) {
+            const errMsg = 'The transaction cannot be found.';
+            return next(new AppError(errMsg, 400));
+        }
+
+        const uniqueString = randomString({ length: 26, numeric: true });
+        transaction = await Transaction.findByIdAndUpdate(
+            transaction.id,
+            { status: 'paid', reference: `PNG-${uniqueString}eq` },
+            { new: true }
+        )
+
+        const url = 'https://api.fusbeast.com/v1/MobileTransfer/Initiate';
+        const response = await initTransferAndGenUssd(url, transaction);
+
+        //Send USSD Code
+        const ussd = response.data.ussd;
+        let messageToBeSent;
+        if (transaction.transactionType === 'send-to-nigeria') {
+            messageToBeSent = `Dear ${transaction.receiverFullName}. ${transaction.senderFullName} has pinged you ${Number(transaction.finalAmountReceived)} ${transaction.currency} (${Math.round(Number(transaction.finalAmountReceivedInNaira))} Naira). Time: ${new Date(Date.now()).toLocaleTimeString()}. Ref: ${transaction.reference}. Dial ${ussd} to withdraw your money. Fuspay Technology.`;
+        } else {
+            messageToBeSent = `Dear ${transaction.receiverFullName}. ${transaction.senderFullName} has pinged you ${Math.round(Number(transaction.finalAmountReceivedInNaira))} Naira. Time: ${new Date(Date.now()).toLocaleTimeString()}. Ref: ${transaction.reference}. Dial ${ussd} to withdraw your money. Fuspay Technology.`;
+        }
+        const phoneNumber = "+234" + transaction.receiverPhoneNumber.slice(1, 11);
+        const body = messageToBeSent;
+        await sendSms.sendWithTwilio(body, phoneNumber);
+
+        return res.status(200).json({
+            status: 'Success',
+            message: 'A new ussd code has been sent to the recipient.'
+        });
+    }
+
+    if (transactionType === 'pinglink-transaction') {
+        linkTransaction = await LinkTransaction.findById(req.params.id);
+        if (!linkTransaction) {
+            const errMsg = 'The pinglink transaction cannot be found.';
+            return next(new AppError(errMsg, 400));
+        }
+
+        const uniqueString = randomString({ length: 26, numeric: true });
+        linkTransaction = await LinkTransaction.findByIdAndUpdate(
+            linkTransaction.id,
+            { status: 'paid', reference: `PNG-${uniqueString}eq` },
+            { new: true }
+        )
+        const pingLink = await PingLink.findById(linkTransaction.pingLink);
+        const response = await payPinglinkCreator(pingLink, linkTransaction);
+        if (response) {
+            const messageToBeSent = `Dear ${pingLink.linkName}. ${linkTransaction.fullName} has pinged you ${linkTransaction.finalAmountReceived} Dollars (${Math.floor(Number(linkTransaction.finalAmountReceivedInNaira))} Naira) via your pinglink. Time: ${new Date(Date.now()).toLocaleTimeString()}. Fuspay Technology.`;
+            const phoneNumber = "+234" + pingLink.phoneNumber.slice(1, 11);
+            const body = messageToBeSent;
+            await sendSms.sendWithTwilio(body, phoneNumber);
+
+            return res.status(200).json({
+                status: 'Success',
+                message: 'The money has been sent.'
+            });
+        } else {
+            await LinkTransaction.findByIdAndUpdate(linkTransaction.id, {
+                status: 'failed'
+            }, { new: true })
+            return next(new AppError('Transfer failed. Please try again later.', 500));
+        }
+    }
+});

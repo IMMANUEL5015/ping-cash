@@ -4,6 +4,7 @@ const {
     refundMoneyToForeigner
 } = require('../controllers/transaction');
 const AppError = require('./appError');
+const { generateRef } = require('./otherUtils');
 
 const handleJwtError = () => new AppError('An error occured. Please login again.', 401);
 const handleTokenExpiredError = () => new AppError('You have been logged out of the application. Please login again.', 401)
@@ -19,7 +20,11 @@ module.exports = async (error, req, res, next) => {
         ) {
             const reference = data.reference;
             if (reference) {
-                const transaction = await Transaction.findOneAndUpdate({ reference }, { status: 'cancelled' }, { new: true });
+                const transaction = await Transaction.findOneAndUpdate(
+                    { reference },
+                    { status: 'cancelled', reference: generateRef() },
+                    { new: true }
+                );
                 //Refund money to the Nigerian Sender
                 if (transaction.transactionType === 'send-within-nigeria') {
                     await refundMoneyToNigerian(transaction);

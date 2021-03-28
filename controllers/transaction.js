@@ -1,7 +1,6 @@
 const Transaction = require('../models/transaction');
 const PingLink = require('../models/pinglink');
 const LinkTransaction = require('../models/linktransaction');
-const randomString = require('random-string');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const Stripe = require('stripe');
@@ -12,14 +11,14 @@ const email = require('../utils/email');
 const cron = require('node-cron');
 const {
     verifyPaymentToFuspay, verifyTransfer,
-    verifyTransferWithId, initTransferAndGenUssd,
+    initTransferAndGenUssd,
     payPinglinkCreator
 } = require('../utils/fuspay_apis');
+const { generateRef } = require('../utils/otherUtils');
 
 exports.initializeTransaction = catchAsync(async (req, res, next) => {
-    const uniqueString = randomString({ length: 26, numeric: true });
     const transaction = await Transaction.create({
-        reference: `PNG-${uniqueString}eq`,
+        reference: generateRef(),
         transactionType: req.body.transactionType,
         senderFullName: req.body.senderFullName,
         senderPhoneNumber: req.body.senderPhoneNumber,
@@ -104,7 +103,7 @@ exports.makePayment = catchAsync(async (req, res, next) => {
     });
 
     await Transaction.findByIdAndUpdate(
-        transaction.id,
+        transaction._id,
         { session_id: session.id },
         { new: true }
     );
@@ -166,7 +165,7 @@ exports.verifyStripePayment = async (req, res, next) => {
                 const body = messageToBeSent;
                 await sendSms.sendWithTwilio(body, phoneNumber);
             } else if (linkTransaction && pingLink) {
-                await LinkTransaction.findByIdAndUpdate(linkTransaction.id, {
+                await LinkTransaction.findByIdAndUpdate(linkTransaction._id, {
                     status: 'paid'
                 }, { new: true })
 
@@ -182,7 +181,7 @@ exports.verifyStripePayment = async (req, res, next) => {
     } catch (error) {
         console.error(error);
         if (linkTransaction) {
-            await LinkTransaction.findByIdAndUpdate(linkTransaction.id, {
+            await LinkTransaction.findByIdAndUpdate(linkTransaction._id, {
                 status: 'failed'
             }, { new: true })
         }
@@ -201,7 +200,7 @@ exports.authorizeTransfer = async (req, res, next) => {
             transaction = await Transaction.findOne({ reference: data.reference });
             authorization_code = data.authorization_code;
             await Transaction.findByIdAndUpdate(
-                transaction.id,
+                transaction._id,
                 { authorization_code: data.authorization_code },
                 { new: true }
             )
@@ -228,7 +227,7 @@ exports.authorizeTransfer = async (req, res, next) => {
         console.error(error);
         if (transaction) {
             await Transaction.findByIdAndUpdate(
-                transaction.id,
+                transaction._id,
                 { authorization_code, status: 'failed' },
                 { new: true }
             )
@@ -259,20 +258,20 @@ cron.schedule('59 23 * * *', async () => {
                     data && data.success === true && data.payment_status === "SUCCESS" &&
                     data.status === "SUCCESS" && data.transactionDescription === "Approved or completed successfully"
                 ) {
-                    const normalTransaction = await Transaction.findById(transaction.id);
+                    const normalTransaction = await Transaction.findById(transaction._id);
                     if (normalTransaction) {
                         await Transaction.findByIdAndUpdate(
-                            transaction.id,
+                            transaction._id,
                             { status: 'received' },
                             {
                                 new: true
                             });
                     }
 
-                    const linkTransaction = await LinkTransaction.findById(transaction.id);
+                    const linkTransaction = await LinkTransaction.findById(transaction._id);
                     if (linkTransaction) {
                         await LinkTransaction.findByIdAndUpdate(
-                            transaction.id,
+                            transaction._id,
                             { status: 'received' },
                             { new: true }
                         );
@@ -440,7 +439,7 @@ exports.cancelTransaction = catchAsync(async (req, res, next) => {
     }
 
     transaction = await Transaction.findByIdAndUpdate(
-        transaction.id,
+        transaction._id,
         { status: 'cancelled' },
         { new: true }
     )
@@ -467,7 +466,7 @@ exports.refundMoneyToNigerian = async (transaction) => {
             "bank_code": bankSortCode,
             "to": "bank",
             "amount": finalAmountPaid,
-            reference: transaction.id,
+            reference: transaction.reference,
             "merchant_id": process.env.MERCHANT_ID
         };
         const headers = { headers: { Authorization: `Bearer ${process.env.MERCHANT_SECRET}` } };
@@ -476,7 +475,7 @@ exports.refundMoneyToNigerian = async (transaction) => {
     } catch (error) {
         console.error(error);
         await Transaction.findByIdAndUpdate(
-            transaction.id,
+            transaction._id,
             { status: 'refund-failed' },
             { new: true }
         );
@@ -499,7 +498,7 @@ exports.refundMoneyToForeigner = async (transaction) => {
     } catch (error) {
         console.error(error);
         await Transaction.findByIdAndUpdate(
-            transaction.id,
+            transaction._id,
             { status: 'refund-failed' },
             { new: true }
         );
@@ -517,7 +516,7 @@ cron.schedule('59 21 * * *', async () => {
             const url = 'https://api.fusbeast.com/v1/Transfer/Verify';
 
             if (transaction) {
-                const response = await verifyTransferWithId(url, transaction);
+                const response = await verifyTransfer(url, transaction);
 
                 let data;
                 if (response) data = response.data;
@@ -528,7 +527,7 @@ cron.schedule('59 21 * * *', async () => {
                 ) {
 
                     await Transaction.findByIdAndUpdate(
-                        transaction.id, { status: 'refunded' }, { new: true }
+                        transaction._id, { status: 'refunded' }, { new: true }
                     )
                 }
             }

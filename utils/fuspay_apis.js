@@ -31,24 +31,6 @@ exports.verifyPaymentToFuspay = async (url) => {
     }
 }
 
-exports.verifyTransferWithId = async (url, transaction) => {
-    try {
-        const response = await axios.post(url, {
-            merchant_id: process.env.MERCHANT_ID,
-            reference: transaction.id
-        }, {
-                headers: {
-                    Authorization: `Bearer ${process.env.MERCHANT_SECRET}`
-                }
-            }
-        );
-
-        if (response) return response;
-    } catch (error) {
-        console.error(error);
-    }
-}
-
 exports.verifyTransfer = async (url, transaction) => {
     try {
         const response = await axios.post(url, {

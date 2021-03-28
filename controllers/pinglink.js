@@ -1,12 +1,12 @@
 const PingLink = require('../models/pinglink');
 const LinkTransaction = require('../models/linktransaction');
-const randomString = require('random-string');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const sendEmail = require('../utils/email');
 const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_TEST_SECRET);
 const { error, success } = require('../utils/responses');
+const { generateRef } = require('../utils/otherUtils');
 
 exports.checkPaymentType = catchAsync(async (req, res, next) => {
     const { paymentType, minimumAmount, linkAmount } = req.body;
@@ -110,14 +110,12 @@ exports.flexiblePayments = catchAsync(async (req, res, next) => {
 });
 
 exports.makePingLinkPayment = catchAsync(async (req, res, next) => {
-    const uniqueString = randomString({ length: 26, numeric: true });
-
     let pingLink = req.pingLink;
     const amount = req.amount;
 
     const linkTransaction = await LinkTransaction.create({
         pingLink,
-        reference: `PNG-${uniqueString}eq`,
+        reference: generateRef(),
         amount: amount ? amount : pingLink.linkAmount,
         fullName: req.body.fullName,
         email: req.body.email,
@@ -145,7 +143,7 @@ exports.makePingLinkPayment = catchAsync(async (req, res, next) => {
         cancel_url: process.env.HOME_PAGE //To be changed later
     });
 
-    await LinkTransaction.findByIdAndUpdate(linkTransaction.id, {
+    await LinkTransaction.findByIdAndUpdate(linkTransaction._id, {
         session_id: session.id,
     }, { new: true });
 

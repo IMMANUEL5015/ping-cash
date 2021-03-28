@@ -1,7 +1,6 @@
 const router = require('express').Router();
 const pinglink = require('../controllers/pinglink');
 const { setBankAndBankCode } = require('../middlewares/general');
-const admin = require('../controllers/admin');
 
 router.post(
     '/create_ping_link',
@@ -9,12 +8,6 @@ router.post(
     setBankAndBankCode,
     // pinglink.preventDuplicatePin,
     pinglink.createPingLink
-)
-
-router.get(
-    '/failed',
-    admin.protect,
-    pinglink.failedTransactions
 )
 
 router.post(

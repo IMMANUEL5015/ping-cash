@@ -33,18 +33,6 @@ exports.checkPaymentType = catchAsync(async (req, res, next) => {
     return next();
 });
 
-// exports.preventDuplicatePin = catchAsync(async (req, res, next) => {
-//     const { pin } = req.body;
-
-//     if (pin) {
-//         const existingPingLink = await PingLink.findOne({ pin });
-//         if (existingPingLink)
-//             return error(res, 200, 'Fail', 'Pin Already Exists!');
-//     }
-
-//     return next();
-// });
-
 exports.createPingLink = catchAsync(async (req, res, next) => {
     const urlName = randomString({ length: 8, numeric: true });
     const linkUrl = `https://pingcash-dev.netlify.app/pinglinks/${urlName}`
@@ -224,9 +212,4 @@ exports.updateTransaction = catchAsync(async (req, res, next) => {
     pinglink = await pinglink.save();
 
     return success(res, 200, 'Success', 'Pinglink updated successfully.', pinglink);
-});
-
-exports.failedTransactions = catchAsync(async (req, res, next) => {
-    const transactions = await LinkTransaction.find({ status: 'failed' }).populate('pingLink');
-    return res.status(200).json({ status: 'Success', transactions });
 });

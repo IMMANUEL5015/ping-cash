@@ -475,6 +475,11 @@ exports.refundMoneyToNigerian = async (transaction) => {
         await axios.post(url, data, headers);
     } catch (error) {
         console.error(error);
+        await Transaction.findByIdAndUpdate(
+            transaction.id,
+            { status: 'refund-failed' },
+            { new: true }
+        );
     }
 }
 
@@ -493,13 +498,13 @@ exports.refundMoneyToForeigner = async (transaction) => {
 
     } catch (error) {
         console.error(error);
+        await Transaction.findByIdAndUpdate(
+            transaction.id,
+            { status: 'refund-failed' },
+            { new: true }
+        );
     }
 }
-
-exports.failedTransactions = catchAsync(async (req, res, next) => {
-    const transactions = await Transaction.find({ status: 'failed' });
-    return res.status(200).json({ status: 'Success', transactions });
-});
 
 //Verify paid transactions at 9:59pm every day.
 cron.schedule('59 21 * * *', async () => {

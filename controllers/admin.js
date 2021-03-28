@@ -190,6 +190,24 @@ exports.viewPinglinkTransaction = (req, res, next) => {
     return res.status(200).json({ status: 'Success', transaction: req.data });
 }
 
+exports.viewFailedTransactions = catchAsync(async (req, res, next) => {
+    let failedTransactions = [];
+
+    const transactions = await Transaction.find({ status: 'failed' });
+    failedTransactions = failedTransactions.concat(transactions);
+
+    const linkTransactions = await LinkTransaction.find({ status: 'failed' }).populate('pingLink');
+    failedTransactions = failedTransactions.concat(linkTransactions);
+
+    const failedRefunds = await Transaction.find({ status: 'refund-failed' });
+    failedTransactions = failedTransactions.concat(failedRefunds);
+
+    return res.status(200).json({
+        status: 'Success',
+        failedTransactions
+    });
+});
+
 exports.makePayout = catchAsync(async (req, res, next) => {
     const { transactionType } = req.body;
 

@@ -44,9 +44,15 @@ router.get(
     admin.viewPinglinkTransaction
 )
 
+router.get(
+    '/failed_transactions',
+    admin.viewFailedTransactions
+);
+
 router.post(
-    '/make_payout/:id',
+    '/make_payout/',
     admin.makePayout
 );
+
 
 module.exports = router;

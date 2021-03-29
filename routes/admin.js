@@ -7,6 +7,11 @@ router.post('/logout', admin.protect, admin.logout);
 
 router.use(admin.protect);
 
+router.post(
+    '/create_user',
+    admin.createUser
+);
+
 router.get(
     '/international_transactions',
     admin.viewInternationalTransactions

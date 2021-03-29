@@ -14,6 +14,7 @@ const {
 const sendSms = require('../utils/sms');
 const { generateRef } = require('../utils/otherUtils');
 const { refundMoneyToForeigner, refundMoneyToNigerian } = require('./transaction');
+const { emailNewUser } = require('../utils/email');
 
 const signToken = id => {
     return jwt.sign({ id }, process.env.SECRET, {
@@ -45,7 +46,7 @@ exports.checkAdminCode = (req, res, next) => {
     return next();
 }
 
-exports.register = catchAsync(async (req, res, next) => {
+const createNewUser = async (req) => {
     const newUser = await User.create({
         name: req.body.name,
         email: req.body.email,
@@ -53,7 +54,22 @@ exports.register = catchAsync(async (req, res, next) => {
         passwordConfirm: req.body.passwordConfirm,
     });
 
+    return newUser;
+}
+
+exports.register = catchAsync(async (req, res, next) => {
+    const newUser = createNewUser(req);
     return createSendToken(newUser, 201, req, res);
+});
+
+exports.createUser = catchAsync(async (req, res, next) => {
+    await createNewUser(req);
+    const { email, name, password } = req.body;
+    await emailNewUser(email, name, password);
+    res.status(201).json({
+        status: 'success',
+        message: 'New user created successfully.'
+    });
 });
 
 exports.login = catchAsync(async (req, res, next) => {

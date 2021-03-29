@@ -63,3 +63,19 @@ exports.sendPingLinkDetails = async (email, linkName, link, pin) => {
   const message = template(title, body);
   return await sendMail(email, title, message);
 }
+
+exports.emailNewUser = async (email, name, password) => {
+  let title = 'PingCash Administrative Account Created';
+  const body = `<h3>Hello ${name}.</h3>
+  <p>The administrator of pingcash has created an account for you on the admin portal.</p>
+  <p>Please proceed to the app to see the roles and privileges that have been assigned to you.</p>
+  <p>The roles and privileges specify what it is you are allowed to do on the system.</p>
+  <p>You can visit the app by clicking <a href='${process.env.ADMIN_URL}'>here</a></p>
+  <p>Please login with the following email and password.</p>
+  <p>email: ${email}</p>
+  <p>password: ${password}</p>
+  <p>Please feel free to reset your password whenever you want.</p>
+  `;
+  const message = template(title, body);
+  return await sendMail(email, title, message);
+}

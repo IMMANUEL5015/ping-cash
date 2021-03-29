@@ -101,9 +101,19 @@ exports.createUser = catchAsync(async (req, res, next) => {
 
 exports.getUsers = catchAsync(async (req, res, next) => {
     const users = await User.find({}).populate('roles');
-    res.status(201).json({
+    res.status(200).json({
         status: 'success',
         data: users
+    });
+});
+
+exports.getUser = catchAsync(async (req, res, next) => {
+    const user = await User.findById(req.params.id).populate('roles');
+    const errMsg = 'The resource you are looking for does not exist on this system.';
+    if (!user) return next(new AppError(errMsg, 404));
+    res.status(200).json({
+        status: 'success',
+        data: user
     });
 });
 

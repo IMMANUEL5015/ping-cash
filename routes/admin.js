@@ -28,6 +28,13 @@ router.get(
     admin.getUser
 );
 
+router.patch(
+    '/users/:id',
+    admin.findUser,
+    admin.removeFields,
+    admin.editUser
+);
+
 router.get(
     '/international_transactions',
     admin.viewInternationalTransactions

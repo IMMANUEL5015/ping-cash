@@ -4,7 +4,7 @@ const AppError = require('../utils/appError');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const Transaction = require('../models/transaction');
-const { find } = require('../utils/crud');
+const { find, update } = require('../utils/crud');
 const PingLink = require('../models/pinglink');
 const LinkTransaction = require('../models/linktransaction');
 const {
@@ -98,6 +98,17 @@ exports.createUser = catchAsync(async (req, res, next) => {
         message: 'New user created successfully.'
     });
 });
+
+exports.findUser = find(User);
+
+exports.removeFields = (req, res, next) => {
+    if (req.body.password) delete req.body.password;
+    if (req.body.passwordConfirm) delete req.body.passwordConfirm;
+
+    return next();
+}
+
+exports.editUser = update(User);
 
 exports.getUsers = catchAsync(async (req, res, next) => {
     const users = await User.find({}).populate('roles');

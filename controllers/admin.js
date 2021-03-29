@@ -108,7 +108,8 @@ exports.getUsers = catchAsync(async (req, res, next) => {
 });
 
 exports.getUser = catchAsync(async (req, res, next) => {
-    const user = await User.findById(req.params.id).populate('roles');
+    const id = req.params.id ? req.params.id : req.user.id;
+    const user = await User.findById(id).populate('roles');
     const errMsg = 'The resource you are looking for does not exist on this system.';
     if (!user) return next(new AppError(errMsg, 404));
     res.status(200).json({

@@ -19,6 +19,11 @@ router.get(
 );
 
 router.get(
+    '/me',
+    admin.getUser
+);
+
+router.get(
     '/users/:id',
     admin.getUser
 );

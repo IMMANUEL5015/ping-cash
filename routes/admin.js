@@ -14,6 +14,11 @@ router.post(
 );
 
 router.get(
+    '/users',
+    admin.getUsers
+);
+
+router.get(
     '/international_transactions',
     admin.viewInternationalTransactions
 );

@@ -99,6 +99,14 @@ exports.createUser = catchAsync(async (req, res, next) => {
     });
 });
 
+exports.getUsers = catchAsync(async (req, res, next) => {
+    const users = await User.find({}).populate('roles');
+    res.status(201).json({
+        status: 'success',
+        data: users
+    });
+});
+
 exports.login = catchAsync(async (req, res, next) => {
     const { email, password } = req.body;
 

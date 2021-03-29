@@ -4,6 +4,8 @@ const admin = require('../controllers/admin');
 router.post('/register', admin.checkAdminCode, admin.register)
 router.post('/login', admin.login);
 router.post('/logout', admin.protect, admin.logout);
+router.post('/forgotPassword', admin.forgotPassword);
+router.patch('/resetPassword/:token', admin.resetPassword);
 
 router.use(admin.protect);
 
@@ -33,6 +35,12 @@ router.patch(
     admin.findUser,
     admin.removeFields,
     admin.editUser
+);
+
+router.delete(
+    '/users/:id',
+    admin.findUser,
+    admin.deleteUser
 );
 
 router.get(

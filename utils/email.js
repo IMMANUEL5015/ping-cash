@@ -79,3 +79,18 @@ exports.emailNewUser = async (email, name, password) => {
   const message = template(title, body);
   return await sendMail(email, title, message);
 }
+
+exports.sendPasswordReset = async (user, resetUrl) => {
+  let title = 'Password Reset';
+  const body = `<h3>Hello ${user.name}.</h3>
+  <p>Your password reset link. Valid for 10 minutes.</p>
+  <p>${resetUrl}</p>
+  <p>
+  If you did not request to change your password, 
+  please ignore this message and your password
+  will remain unchanged. 
+  </p>
+  `;
+  const message = template(title, body);
+  return await sendMail(user.email, title, message);
+}

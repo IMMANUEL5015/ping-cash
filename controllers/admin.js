@@ -1,10 +1,11 @@
+const crypto = require('crypto');
 const { promisify } = require('util');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const Transaction = require('../models/transaction');
-const { find, update } = require('../utils/crud');
+const { find, update, deleteOne } = require('../utils/crud');
 const PingLink = require('../models/pinglink');
 const LinkTransaction = require('../models/linktransaction');
 const {
@@ -14,7 +15,7 @@ const {
 const sendSms = require('../utils/sms');
 const { generateRef } = require('../utils/otherUtils');
 const { refundMoneyToForeigner, refundMoneyToNigerian } = require('./transaction');
-const { emailNewUser } = require('../utils/email');
+const { emailNewUser, sendPasswordReset } = require('../utils/email');
 const Role = require('../models/role');
 
 const signToken = id => {
@@ -110,6 +111,8 @@ exports.removeFields = (req, res, next) => {
 
 exports.editUser = update(User);
 
+exports.deleteUser = deleteOne(User);
+
 exports.getUsers = catchAsync(async (req, res, next) => {
     const users = await User.find({}).populate('roles');
     res.status(200).json({
@@ -166,11 +169,79 @@ exports.protect = catchAsync(async (req, res, next) => {
         return next(new AppError('The owner of the login credentials no longer exists.', 401));
     }
 
+    if (currentUser.changedPasswordAfterTokenWasIssued(decoded.iat)) {
+        return next(new AppError('Password was changed recently. Please login again.', 401));
+    }
+
     //Grant access to protected route
     req.user = currentUser;
     next();
 });
 
+exports.forgotPassword = catchAsync(async (req, res, next) => {
+    //1. Get the provided email
+    const email = req.body.email;
+    if (!email) {
+        return next(new AppError('Please provide your email address.', 400));
+    }
+
+    //2. Find the user based on their email address
+    const user = await User.findOne({ email: req.body.email });
+    if (!user) {
+        return next(new AppError('There is no user with that email address.', 404));
+    }
+
+    //3. Generate a random reset token (not JWT)
+    const resetToken = user.createPasswordResetToken();
+    await user.save({ validateBeforeSave: false });
+
+    //4. Send the token to the user's email address
+    try {
+        const resetUrl = `${process.env.ADMIN_URL}reset-password/${resetToken}`;
+        await sendPasswordReset(user, resetUrl);
+        res.status(200).json({
+            status: 'success',
+            message: 'Token sent to email'
+        });
+    } catch (error) {
+        user.passwordResetToken = undefined;
+        user.passwordResetExpires = undefined;
+        await user.save();
+        return next(new AppError('There was an error sending the email', 500));
+    }
+});
+
+exports.resetPassword = catchAsync(async (req, res, next) => {
+    //1. Return an error for bad requests
+    const { password, passwordConfirm } = req.body;
+    if (!password || !passwordConfirm) {
+        return next(new AppError('Please provide your password and confirm it.', 400));
+    }
+
+    //2.Encrypt the unencrypted token in order to compare it with the one in the DB. 
+    const hashedToken = crypto.createHash('sha256')
+        .update(req.params.token)
+        .digest('hex');
+
+    //3.Get user based on token if token has not expired and if user still exists
+    const user = await User.findOne({
+        passwordResetToken: hashedToken,
+        passwordResetExpires: { $gt: Date.now() }
+    });
+    if (!user) {
+        return next(new AppError('Token is invalid or has expired.', 400));
+    }
+
+    //4. Set the new password if all goes well
+    user.password = password;
+    user.passwordConfirm = passwordConfirm;
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save();
+
+    //5. Log the user in
+    createSendToken(user, 200, req, res);
+});
 
 exports.logout = (req, res) => {
     const token = jwt.sign({ id: req.user.id }, process.env.SECRET, {

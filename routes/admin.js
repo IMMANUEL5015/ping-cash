@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const admin = require('../controllers/admin');
 
-router.post('/register', admin.register)
+router.post('/register', admin.checkAdminCode, admin.register)
 router.post('/login', admin.login);
 router.post('/logout', admin.protect, admin.logout);
 
@@ -9,6 +9,7 @@ router.use(admin.protect);
 
 router.post(
     '/create_user',
+    admin.checkForRoles,
     admin.createUser
 );
 

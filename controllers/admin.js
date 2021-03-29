@@ -15,6 +15,7 @@ const sendSms = require('../utils/sms');
 const { generateRef } = require('../utils/otherUtils');
 const { refundMoneyToForeigner, refundMoneyToNigerian } = require('./transaction');
 const { emailNewUser } = require('../utils/email');
+const Role = require('../models/role');
 
 const signToken = id => {
     return jwt.sign({ id }, process.env.SECRET, {
@@ -46,12 +47,38 @@ exports.checkAdminCode = (req, res, next) => {
     return next();
 }
 
+exports.checkForRoles = catchAsync(async (req, res, next) => {
+    if (!req.body.roles) {
+        const errMsg = 'Please specify the roles that you want this user to have.';
+        return next(new AppError(errMsg, 400));
+    }
+
+    if (!Array.isArray(req.body.roles)) {
+        const errMsg = 'The roles you are assigning to this user should be a list.';
+        return next(new AppError(errMsg, 400));
+    }
+
+    for (let i = 0; i < req.body.roles.length; i++) {
+        const roleId = req.body.roles[i];
+        const role = await Role.findById(roleId);
+
+        if (!role) {
+            const errMsg = 'You cannot assign a non-existent role to an administrator.';
+            return next(new AppError(errMsg, 400));
+        }
+    }
+
+    return next();
+});
+
 const createNewUser = async (req) => {
     const newUser = await User.create({
         name: req.body.name,
         email: req.body.email,
         password: req.body.password,
         passwordConfirm: req.body.passwordConfirm,
+        roles: req.body.roles,
+        role: req.body.adminCode ? 'super-admin' : 'admin'
     });
 
     return newUser;

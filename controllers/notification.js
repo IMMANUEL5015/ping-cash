@@ -26,19 +26,21 @@ exports.unreadNotifications = catchAsync(async (req, res, next) => {
     }
 });
 
-exports.markOneAsRead = async (notificationId) => {
+exports.markOneAsRead = catchAsync(async (req, res, next) => {
     try {
-        const notification = await Notification.findByIdAndUpdate(
-            notificationId,
+        await Notification.findOneAndUpdate(
+            { id: req.params.notificationId, user: req.user._id },
             { status: 'read' },
             { new: true }
         );
 
-        return notification;
+        return res.status(200).json({
+            status: 'Success'
+        });
     } catch (error) {
         console.error(error);
     }
-}
+});
 
 exports.markAllAsRead = async (userId) => {
     try {

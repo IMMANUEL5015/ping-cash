@@ -29,11 +29,10 @@ exports.unreadNotifications = catchAsync(async (req, res, next) => {
 exports.markOneAsRead = catchAsync(async (req, res, next) => {
     try {
         await Notification.findOneAndUpdate(
-            { id: req.params.notificationId, user: req.user._id },
+            { _id: req.params.notificationId, user: req.user._id },
             { status: 'read' },
             { new: true }
         );
-
         return res.status(200).json({
             status: 'Success'
         });

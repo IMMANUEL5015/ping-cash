@@ -2,6 +2,7 @@ const randomString = require('random-string');
 const User = require('../models/user');
 const notification = require('../controllers/notification');
 const { failedTransactionsEmail } = require('./email');
+const SocketIo = require('./socket');
 
 exports.generateRef = () => {
     const uniqueString = randomString({ length: 26, numeric: true });
@@ -35,6 +36,7 @@ const findPrivilegedUsers = async (privilege) => {
 
 exports.notifyPrivilegedUsersOfFailedTransactions = async (obj) => {
     try {
+        let io = SocketIo.getSocket();
         const { message, type, transactionId } = obj;
         const privilegedUsers = await findPrivilegedUsers('view-failed-transactions');
         for (let i = 0; i < privilegedUsers.length; i++) {
@@ -46,6 +48,8 @@ exports.notifyPrivilegedUsersOfFailedTransactions = async (obj) => {
                 type,
                 transactionId
             });
+
+            io.emit('notification', "new notification");
 
             await failedTransactionsEmail(user);
         }

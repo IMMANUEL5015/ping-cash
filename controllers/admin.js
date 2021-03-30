@@ -427,7 +427,6 @@ exports.makePayout = catchAsync(async (req, res, next) => {
                 await LinkTransaction.findByIdAndUpdate(linkTransaction._id, {
                     status: 'failed'
                 }, { new: true })
-
                 const obj = {
                     message: 'An error occured when trying to transfer money to a pinglink creator.',
                     type: 'pinglink-transaction',

@@ -1,4 +1,5 @@
 const Notification = require('../models/notification');
+const catchAsync = require('../utils/catchAsync');
 
 exports.createNotification = async (obj) => {
     try {
@@ -9,18 +10,21 @@ exports.createNotification = async (obj) => {
     }
 }
 
-exports.unreadNotifications = async (userId) => {
+exports.unreadNotifications = catchAsync(async (req, res, next) => {
     try {
         const notifications = await Notification.find({
-            user: userId,
+            user: req.user._id,
             status: 'unread'
         }).sort('-createdAt');
 
-        return notifications;
+        return res.status(200).json({
+            status: 'Success',
+            notifications
+        });
     } catch (error) {
         console.error(error);
     }
-}
+});
 
 exports.markOneAsRead = async (notificationId) => {
     try {

@@ -14,7 +14,10 @@ const {
     initTransferAndGenUssd,
     payPinglinkCreator
 } = require('../utils/fuspay_apis');
-const { generateRef } = require('../utils/otherUtils');
+const {
+    generateRef,
+    notifyPrivilegedUsersOfFailedTransactions
+} = require('../utils/otherUtils');
 
 exports.initializeTransaction = catchAsync(async (req, res, next) => {
     const transaction = await Transaction.create({
@@ -175,16 +178,23 @@ exports.verifyStripePayment = async (req, res, next) => {
                     const phoneNumber = "+234" + pingLink.phoneNumber.slice(1, 11);
                     const body = messageToBeSent;
                     await sendSms.sendWithTwilio(body, phoneNumber);
+                } else {
+                    await LinkTransaction.findByIdAndUpdate(linkTransaction._id, {
+                        status: 'failed'
+                    }, { new: true })
+
+                    const obj = {
+                        message: 'An error occured when trying to transfer money to a pinglink creator.',
+                        type: 'pinglink-transaction',
+                        transactionId: linkTransaction._id
+                    };
+
+                    await notifyPrivilegedUsersOfFailedTransactions(obj);
                 }
             }
         }
     } catch (error) {
         console.error(error);
-        if (linkTransaction) {
-            await LinkTransaction.findByIdAndUpdate(linkTransaction._id, {
-                status: 'failed'
-            }, { new: true })
-        }
     }
 }
 
@@ -231,6 +241,14 @@ exports.authorizeTransfer = async (req, res, next) => {
                 { authorization_code, status: 'failed' },
                 { new: true }
             )
+
+            const obj = {
+                message: 'An error occured when a customer tried to claim the amount pinged to his phone number.',
+                type: 'send-money-transaction',
+                transactionId: transaction._id
+            };
+
+            await notifyPrivilegedUsersOfFailedTransactions(obj);
         }
     }
 }
@@ -479,6 +497,14 @@ exports.refundMoneyToNigerian = async (transaction) => {
             { status: 'refund-failed' },
             { new: true }
         );
+
+        const obj = {
+            message: 'An error occured when trying to refund money to a sender.',
+            type: 'failed-refund',
+            transactionId: transaction._id
+        };
+
+        await notifyPrivilegedUsersOfFailedTransactions(obj);
     }
 }
 
@@ -502,6 +528,14 @@ exports.refundMoneyToForeigner = async (transaction) => {
             { status: 'refund-failed' },
             { new: true }
         );
+
+        const obj = {
+            message: 'An error occured when trying to refund money to a sender.',
+            type: 'failed-refund',
+            transactionId: transaction._id
+        };
+
+        await notifyPrivilegedUsersOfFailedTransactions(obj);
     }
 }
 

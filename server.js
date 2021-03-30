@@ -1,8 +1,12 @@
+const http = require('http');
 require('dotenv').config();
 const PORT = process.env.PORT;
 const app = require('./app');
+const SocketIo = require('./utils/socket');
 
 //Setup server
-app.listen(PORT, () => {
-    console.log(`Sever has started and is listening on port ${PORT}`);
-});
+const server = http.createServer(app);
+SocketIo.initSocket(server, { cors: { origin: '*' } });
+server.listen(PORT, () => (
+    console.log(`You are now listening to port: ${PORT}`)
+));

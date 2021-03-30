@@ -13,7 +13,10 @@ const {
     payPinglinkCreator
 } = require('../utils/fuspay_apis');
 const sendSms = require('../utils/sms');
-const { generateRef } = require('../utils/otherUtils');
+const {
+    generateRef,
+    notifyPrivilegedUsersOfFailedTransactions
+} = require('../utils/otherUtils');
 const { refundMoneyToForeigner, refundMoneyToNigerian } = require('./transaction');
 const { emailNewUser, sendPasswordReset } = require('../utils/email');
 const Role = require('../models/role');
@@ -424,6 +427,14 @@ exports.makePayout = catchAsync(async (req, res, next) => {
                 await LinkTransaction.findByIdAndUpdate(linkTransaction._id, {
                     status: 'failed'
                 }, { new: true })
+
+                const obj = {
+                    message: 'An error occured when trying to transfer money to a pinglink creator.',
+                    type: 'pinglink-transaction',
+                    transactionId: linkTransaction._id
+                };
+
+                await notifyPrivilegedUsersOfFailedTransactions(obj);
             }
         }
 

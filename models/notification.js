@@ -15,6 +15,15 @@ const notificationSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     },
+    type: {
+        required: true,
+        enum: ['send-money-transaction', 'pinglink-transaction', 'failed-refund'],
+        type: String
+    },
+    transactionId: {
+        required: true,
+        type: String
+    },
     createdAt: {
         type: Date,
         default: Date.now

@@ -200,7 +200,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
 
     //4. Send the token to the user's email address
     try {
-        const resetUrl = `${process.env.ADMIN_URL}reset-password/${resetToken}`;
+        const resetUrl = `${process.env.ADMIN_URL}reset-password?token=${resetToken}`;
         await sendPasswordReset(user, resetUrl);
         res.status(200).json({
             status: 'success',

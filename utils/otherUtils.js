@@ -3,6 +3,8 @@ const User = require('../models/user');
 const notification = require('../controllers/notification');
 const { failedTransactionsEmail } = require('./email');
 const SocketIo = require('./socket');
+const Email = require('../models/email');
+const cron = require('node-cron');
 
 exports.generateRef = () => {
     const uniqueString = randomString({ length: 26, numeric: true });
@@ -51,9 +53,24 @@ exports.notifyPrivilegedUsersOfFailedTransactions = async (obj) => {
 
             io.emit('notification', "new notification");
 
-            await failedTransactionsEmail(user);
+            await Email.create({
+                status: 'pending',
+                user
+            });
         }
     } catch (error) {
         console.error(error);
     }
 }
+
+cron.schedule('*/15 * * * * *', async () => {
+    try {
+        const email = await Email.findOne({ status: 'pending' }).populate('user');
+        if (email) {
+            await failedTransactionsEmail(email.user);
+            await Email.findByIdAndUpdate(email.id, { status: 'sent' }, { new: true });
+        }
+    } catch (error) {
+        console.error(error);
+    }
+});

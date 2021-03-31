@@ -85,10 +85,10 @@ router.get(
     admin.viewFailedTransactions
 );
 
-router.post(
-    '/make_payout/',
-    admin.makePayout
-);
+// router.post(
+//     '/make_payout/',
+//     admin.makePayout
+// );
 
 
 module.exports = router;

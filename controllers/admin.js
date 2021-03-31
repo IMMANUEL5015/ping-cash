@@ -361,113 +361,113 @@ exports.viewFailedTransactions = catchAsync(async (req, res, next) => {
     });
 });
 
-exports.makePayout = catchAsync(async (req, res, next) => {
-    const transactions = await findAllFailedTransactions();
+//Verify paid transactions at 7:59pm every day.
+cron.schedule('59 19 * * *', async () => {
+    try {
+        const transactions = await findAllFailedTransactions();
 
-    for (let i = 0; i < transactions.length; i++) {
-        const theTransaction = transactions[i];
+        for (let i = 0; i < transactions.length; i++) {
+            const theTransaction = transactions[i];
 
-        let transaction;
-        let linkTransaction;
+            let transaction;
+            let linkTransaction;
 
-        if (
-            (
-                theTransaction.transactionType === 'send-to-nigeria' &&
-                theTransaction.status === 'failed'
-            )
+            if (
+                (
+                    theTransaction.transactionType === 'send-to-nigeria' &&
+                    theTransaction.status === 'failed'
+                )
 
-            ||
+                ||
 
-            (
-                theTransaction.transactionType === 'send-within-nigeria' &&
-                theTransaction.status === 'failed'
-            )
-        ) {
-            transaction = theTransaction;
+                (
+                    theTransaction.transactionType === 'send-within-nigeria' &&
+                    theTransaction.status === 'failed'
+                )
+            ) {
+                transaction = theTransaction;
 
-            if (transaction) {
-                transaction = await Transaction.findByIdAndUpdate(
-                    transaction._id,
+                if (transaction) {
+                    transaction = await Transaction.findByIdAndUpdate(
+                        transaction._id,
+                        { status: 'paid', reference: generateRef() },
+                        { new: true }
+                    )
+                    const url = 'https://api.fusbeast.com/v1/MobileTransfer/Initiate';
+                    const response = await initTransferAndGenUssd(url, transaction);
+
+                    //Send USSD Code
+                    const ussd = response.data.ussd;
+                    let messageToBeSent;
+                    if (transaction.transactionType === 'send-to-nigeria') {
+                        messageToBeSent = `Dear ${transaction.receiverFullName}. ${transaction.senderFullName} has pinged you ${Number(transaction.finalAmountReceived)} ${transaction.currency} (${Math.round(Number(transaction.finalAmountReceivedInNaira))} Naira). Time: ${new Date(Date.now()).toLocaleTimeString()}. Ref: ${transaction.reference}. Dial ${ussd} to withdraw your money. Fuspay Technology.`;
+                    } else {
+                        messageToBeSent = `Dear ${transaction.receiverFullName}. ${transaction.senderFullName} has pinged you ${Math.round(Number(transaction.finalAmountReceivedInNaira))} Naira. Time: ${new Date(Date.now()).toLocaleTimeString()}. Ref: ${transaction.reference}. Dial ${ussd} to withdraw your money. Fuspay Technology.`;
+                    }
+                    const phoneNumber = "+234" + transaction.receiverPhoneNumber.slice(1, 11);
+                    const body = messageToBeSent;
+                    await sendSms.sendWithTwilio(body, phoneNumber);
+                }
+            }
+
+            if (theTransaction.pingLink && theTransaction.status === 'failed') {
+                linkTransaction = theTransaction;
+
+                linkTransaction = await LinkTransaction.findByIdAndUpdate(
+                    linkTransaction._id,
                     { status: 'paid', reference: generateRef() },
                     { new: true }
                 )
-                const url = 'https://api.fusbeast.com/v1/MobileTransfer/Initiate';
-                const response = await initTransferAndGenUssd(url, transaction);
-
-                //Send USSD Code
-                const ussd = response.data.ussd;
-                let messageToBeSent;
-                if (transaction.transactionType === 'send-to-nigeria') {
-                    messageToBeSent = `Dear ${transaction.receiverFullName}. ${transaction.senderFullName} has pinged you ${Number(transaction.finalAmountReceived)} ${transaction.currency} (${Math.round(Number(transaction.finalAmountReceivedInNaira))} Naira). Time: ${new Date(Date.now()).toLocaleTimeString()}. Ref: ${transaction.reference}. Dial ${ussd} to withdraw your money. Fuspay Technology.`;
+                const pingLink = await PingLink.findById(linkTransaction.pingLink._id);
+                const response = await payPinglinkCreator(pingLink, linkTransaction);
+                if (response) {
+                    const messageToBeSent = `Dear ${pingLink.linkName}. ${linkTransaction.fullName} has pinged you ${linkTransaction.finalAmountReceived} Dollars (${Math.floor(Number(linkTransaction.finalAmountReceivedInNaira))} Naira) via your pinglink. Time: ${new Date(Date.now()).toLocaleTimeString()}. Fuspay Technology.`;
+                    const phoneNumber = "+234" + pingLink.phoneNumber.slice(1, 11);
+                    const body = messageToBeSent;
+                    await sendSms.sendWithTwilio(body, phoneNumber);
                 } else {
-                    messageToBeSent = `Dear ${transaction.receiverFullName}. ${transaction.senderFullName} has pinged you ${Math.round(Number(transaction.finalAmountReceivedInNaira))} Naira. Time: ${new Date(Date.now()).toLocaleTimeString()}. Ref: ${transaction.reference}. Dial ${ussd} to withdraw your money. Fuspay Technology.`;
+                    await LinkTransaction.findByIdAndUpdate(linkTransaction._id, {
+                        status: 'failed'
+                    }, { new: true })
+                    const obj = {
+                        message: 'An error occured when trying to transfer money to a pinglink creator.',
+                        type: 'pinglink-transaction',
+                        transactionId: linkTransaction._id
+                    };
+
+                    await notifyPrivilegedUsersOfFailedTransactions(obj);
                 }
-                const phoneNumber = "+234" + transaction.receiverPhoneNumber.slice(1, 11);
-                const body = messageToBeSent;
-                await sendSms.sendWithTwilio(body, phoneNumber);
-            }
-        }
-
-        if (theTransaction.pingLink && theTransaction.status === 'failed') {
-            linkTransaction = theTransaction;
-
-            linkTransaction = await LinkTransaction.findByIdAndUpdate(
-                linkTransaction._id,
-                { status: 'paid', reference: generateRef() },
-                { new: true }
-            )
-            const pingLink = await PingLink.findById(linkTransaction.pingLink._id);
-            const response = await payPinglinkCreator(pingLink, linkTransaction);
-            if (response) {
-                const messageToBeSent = `Dear ${pingLink.linkName}. ${linkTransaction.fullName} has pinged you ${linkTransaction.finalAmountReceived} Dollars (${Math.floor(Number(linkTransaction.finalAmountReceivedInNaira))} Naira) via your pinglink. Time: ${new Date(Date.now()).toLocaleTimeString()}. Fuspay Technology.`;
-                const phoneNumber = "+234" + pingLink.phoneNumber.slice(1, 11);
-                const body = messageToBeSent;
-                await sendSms.sendWithTwilio(body, phoneNumber);
-            } else {
-                await LinkTransaction.findByIdAndUpdate(linkTransaction._id, {
-                    status: 'failed'
-                }, { new: true })
-                const obj = {
-                    message: 'An error occured when trying to transfer money to a pinglink creator.',
-                    type: 'pinglink-transaction',
-                    transactionId: linkTransaction._id
-                };
-
-                await notifyPrivilegedUsersOfFailedTransactions(obj);
-            }
-        }
-
-        if (
-            (
-                theTransaction.transactionType === 'send-to-nigeria' &&
-                theTransaction.status === 'refund-failed'
-            )
-
-            ||
-
-            (
-                theTransaction.transactionType === 'send-within-nigeria' &&
-                theTransaction.status === 'refund-failed'
-            )
-        ) {
-            transaction = theTransaction;
-            if (transaction.transactionType === 'send-to-nigeria') {
-                await refundMoneyToForeigner(transaction);
             }
 
-            if (transaction.transactionType === 'send-within-nigeria') {
-                transaction = await Transaction.findByIdAndUpdate(
-                    transaction._id,
-                    { reference: generateRef(), status: 'cancelled' },
-                    { new: true }
+            if (
+                (
+                    theTransaction.transactionType === 'send-to-nigeria' &&
+                    theTransaction.status === 'refund-failed'
                 )
-                await refundMoneyToNigerian(transaction);
+
+                ||
+
+                (
+                    theTransaction.transactionType === 'send-within-nigeria' &&
+                    theTransaction.status === 'refund-failed'
+                )
+            ) {
+                transaction = theTransaction;
+                if (transaction.transactionType === 'send-to-nigeria') {
+                    await refundMoneyToForeigner(transaction);
+                }
+
+                if (transaction.transactionType === 'send-within-nigeria') {
+                    transaction = await Transaction.findByIdAndUpdate(
+                        transaction._id,
+                        { reference: generateRef(), status: 'cancelled' },
+                        { new: true }
+                    )
+                    await refundMoneyToNigerian(transaction);
+                }
             }
         }
+    } catch (error) {
+        console.error(error);
     }
-
-    return res.status(200).json({
-        status: 'Success',
-        message: 'Operation completed!'
-    })
 });

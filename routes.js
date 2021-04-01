@@ -12,10 +12,12 @@ const adminRouter = require('./routes/admin');
 const pcategoryRouter = require('./routes/pcategory');
 const privilegeRouter = require('./routes/privilege');
 const notificationRouter = require('./routes/notification');
+const accountingRouter = require('./routes/accounting');
 const roleRouter = require('./routes/role');
 
 router.use('/admin', adminRouter);
 router.use('/notifications', notificationRouter);
+router.use('/accounting', accountingRouter);
 router.use('/pcategories', pcategoryRouter);
 router.use('/privileges', privilegeRouter);
 router.use('/roles', roleRouter);

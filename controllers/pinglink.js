@@ -1,3 +1,4 @@
+const randomString = require('random-string');
 const PingLink = require('../models/pinglink');
 const LinkTransaction = require('../models/linktransaction');
 const catchAsync = require('../utils/catchAsync');

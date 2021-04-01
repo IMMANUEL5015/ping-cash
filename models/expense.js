@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const accountingSchema = mongoose.Schema({
+const expenseSchema = mongoose.Schema({
     name: {
         type: String,
         required: [true, 'Name is required.'],
@@ -17,4 +17,4 @@ const accountingSchema = mongoose.Schema({
     }
 });
 
-module.exports = mongoose.model('Accounting', accountingSchema);
+module.exports = mongoose.model('Expense', expenseSchema);

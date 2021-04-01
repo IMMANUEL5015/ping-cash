@@ -85,7 +85,8 @@ const transactionSchema = mongoose.Schema({
     session_id: String,
     exchangeRate: String,
     paymentIntent: String,
-    authorization_code: String
+    authorization_code: String,
+    administrativeExpensesInNaira: Number
 });
 
 transactionSchema.pre('save', async function (next) {
@@ -150,16 +151,17 @@ transactionSchema.pre('save', async function (next) {
         const quotes = data.quotes;
         let dollarInNaira = quotes.USDNGN;
 
-        let exchangeRate
+        let adminCut;
         //Convert it to Naira based on the credit rate
-        exchangeRate = (currentCreditRate / 100) * dollarInNaira;
-        exchangeRate = exchangeRate + dollarInNaira;
+        adminCut = (currentCreditRate / 100) * dollarInNaira;
+        const exchangeRate = dollarInNaira - adminCut;
 
         //Set the exchange rate that was used for the transaction
         this.exchangeRate = exchangeRate;
 
         //Set the finalAmountReceivedInNaira
-        this.finalAmountReceivedInNaira = (this.exchangeRate * this.finalAmountReceived);
+        this.finalAmountReceivedInNaira = (Number(this.exchangeRate) * Number(this.finalAmountReceived));
+        this.administrativeExpensesInNaira = (adminCut * Number(this.finalAmountReceived));
     }
 
     next();

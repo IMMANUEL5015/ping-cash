@@ -102,7 +102,7 @@ exports.failedTransactionsEmail = async (user) => {
   <p>Something went wrong when trying to transfer money to one of ping cash's customers.</p>
   <p>
   Please login to see the details of all failed transactions 
-  and make the payout from the admin dashboard</p>
+  </p>
   <p>
   <a href="${url}">${url}</a>. 
   </p>

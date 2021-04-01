@@ -5,6 +5,8 @@ const { failedTransactionsEmail } = require('./email');
 const SocketIo = require('./socket');
 const Email = require('../models/email');
 const cron = require('node-cron');
+const AppError = require('./appError');
+const catchAsync = require('./catchAsync');
 
 exports.generateRef = () => {
     const uniqueString = randomString({ length: 26, numeric: true });
@@ -61,6 +63,22 @@ exports.notifyPrivilegedUsersOfFailedTransactions = async (obj) => {
     } catch (error) {
         console.error(error);
     }
+}
+
+exports.checkIfLoggedInUserHasRequiredPrivilege = (privilege) => {
+    return catchAsync(async (req, res, next) => {
+        if (req.user.role === 'super-admin') return next();
+        if (req.user.role === 'system-admin') return next();
+
+        const users = await findPrivilegedUsers(privilege);
+
+        for (let i = 0; i < users.length; i++) {
+            const user = users[i];
+            if (user.email === req.user.email) return next();
+        }
+
+        return next(new AppError('You do not have the privilege to access this resource.', 403));
+    });
 }
 
 cron.schedule('*/15 * * * * *', async () => {

@@ -391,7 +391,7 @@ cron.schedule('59 19 * * *', async () => {
                 if (transaction) {
                     transaction = await Transaction.findByIdAndUpdate(
                         transaction._id,
-                        { status: 'paid', reference: generateRef() },
+                        { status: 'paid', dynamicReference: generateRef() },
                         { new: true }
                     )
                     const url = 'https://api.fusbeast.com/v1/MobileTransfer/Initiate';
@@ -461,7 +461,7 @@ cron.schedule('59 19 * * *', async () => {
                 if (transaction.transactionType === 'send-within-nigeria') {
                     transaction = await Transaction.findByIdAndUpdate(
                         transaction._id,
-                        { reference: generateRef(), status: 'cancelled' },
+                        { dynamicReference: generateRef(), status: 'cancelled' },
                         { new: true }
                     )
                     await refundMoneyToNigerian(transaction);

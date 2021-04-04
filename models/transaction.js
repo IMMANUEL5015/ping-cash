@@ -42,6 +42,11 @@ const transactionSchema = mongoose.Schema({
         required: [true, 'Every transaction must have a unique reference.'],
         unique: true
     },
+    dynamicReference: {
+        type: String,
+        required: [true, 'Every transaction must have a unique dynamic reference.'],
+        unique: true
+    },
     status: {
         type: String,
         enum: ['pending', 'paid', 'cancelled', 'received', 'failed', 'refunded', 'refund-failed'],
@@ -86,7 +91,13 @@ const transactionSchema = mongoose.Schema({
     exchangeRate: String,
     paymentIntent: String,
     authorization_code: String,
-    administrativeExpensesInNaira: Number
+    administrativeExpensesInNaira: Number,
+    administrativeExpenses: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Expense'
+        }
+    ]
 });
 
 transactionSchema.pre('save', async function (next) {

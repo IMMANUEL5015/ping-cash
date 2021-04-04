@@ -18,10 +18,13 @@ const {
     generateRef,
     notifyPrivilegedUsersOfFailedTransactions
 } = require('../utils/otherUtils');
+const { success } = require('../utils/responses');
 
 exports.initializeTransaction = catchAsync(async (req, res, next) => {
+    const ref = generateRef();
     const transaction = await Transaction.create({
-        reference: generateRef(),
+        reference: ref,
+        dynamicReference: ref,
         transactionType: req.body.transactionType,
         senderFullName: req.body.senderFullName,
         senderPhoneNumber: req.body.senderPhoneNumber,
@@ -207,7 +210,7 @@ exports.authorizeTransfer = async (req, res, next) => {
             data.success === 'true' && data.message === 'Succcessful' &&
             data.webhook_secret === process.env.WEBHOOK_SECRET
         ) {
-            transaction = await Transaction.findOne({ reference: data.reference });
+            transaction = await Transaction.findOne({ dynamicReference: data.reference });
             authorization_code = data.authorization_code;
             await Transaction.findByIdAndUpdate(
                 transaction._id,
@@ -320,7 +323,7 @@ exports.getCheckoutUrl = catchAsync(async (req, res, next) => {
     const url = `https://api.fusbeast.com/checkout/${process.env.MERCHANT_ID}/create`;
 
     const response = await axios.post(url, {
-        reference: transaction.reference,
+        reference: transaction.dynamicReference,
         checkout_type: 'DIRECT',
         customer_email: transaction.senderEmailAddress,
         amount: `${Math.round(Number(transaction.finalAmountPaid))}`,
@@ -343,7 +346,7 @@ cron.schedule('*/5 * * * *', async () => {
 
         for (let i = 0; i < transactions.length; i++) {
             const transaction = transactions[i];
-            const { reference } = transaction;
+            const reference = transaction.dynamicReference;
 
             const url = `https://api.fusbeast.com/checkout-status/${reference}`;
             const data = await verifyPaymentToFuspay(url);
@@ -353,8 +356,8 @@ cron.schedule('*/5 * * * *', async () => {
                 data.success && data.message === 'Successful'
                 && !data.error
             ) {
-                await Transaction.findOneAndUpdate(
-                    { reference },
+                await Transaction.findByIdAndUpdate(
+                    transaction._id,
                     { status: 'paid' },
                     { new: true }
                 );
@@ -427,18 +430,18 @@ exports.cancelTransaction = catchAsync(async (req, res, next) => {
 
     if (
         transaction.status === 'received' || transaction.status === 'cancelled' ||
-        transaction.status === 'refunded'
+        transaction.status === 'refunded' || transaction.status === 'refund-failed'
     ) {
         return next(new AppError('You cannot cancel this transaction!', 403));
     }
 
-    if (transaction.status === 'paid') {
+    if (transaction.status === 'paid' || transaction.status === 'failed') {
         const url = 'https://api.fusbeast.com/v1/Transfer/Verify';
 
         if (transaction) {
             const response = await axios.post(url, {
                 merchant_id: process.env.MERCHANT_ID,
-                reference: transaction.reference
+                reference: transaction.dynamicReference
             }, {
                     headers: {
                         Authorization: `Bearer ${process.env.MERCHANT_SECRET}`
@@ -469,7 +472,7 @@ exports.cancelTransaction = catchAsync(async (req, res, next) => {
     });
 });
 
-exports.refundMoneyToNigerian = async (transaction) => {
+exports.refundMoneyToNigerian = async (transaction, res) => {
     //Handle failed refunds later on
     try {
         const {
@@ -484,12 +487,17 @@ exports.refundMoneyToNigerian = async (transaction) => {
             "bank_code": bankSortCode,
             "to": "bank",
             "amount": finalAmountPaid,
-            reference: transaction.reference,
+            reference: transaction.dynamicReference,
             "merchant_id": process.env.MERCHANT_ID
         };
         const headers = { headers: { Authorization: `Bearer ${process.env.MERCHANT_SECRET}` } };
 
         await axios.post(url, data, headers);
+
+        if (res) {
+            const msg = 'You have successfully cancelled this transaction. Your money will be refunded.';
+            return success(res, 200, 'Success', msg);
+        }
     } catch (error) {
         console.error(error);
         await Transaction.findByIdAndUpdate(
@@ -505,6 +513,11 @@ exports.refundMoneyToNigerian = async (transaction) => {
         };
 
         await notifyPrivilegedUsersOfFailedTransactions(obj);
+
+        if (res) {
+            const msg = 'You have successfully cancelled this transaction. Your money will be refunded.';
+            return success(res, 500, 'Success', msg);
+        }
     }
 }
 
@@ -521,6 +534,10 @@ exports.refundMoneyToForeigner = async (transaction) => {
             { new: true }
         )
 
+        if (res) {
+            const msg = 'You have successfully cancelled this transaction. Your money will be refunded.';
+            return success(res, 200, 'Success', msg);
+        }
     } catch (error) {
         console.error(error);
         await Transaction.findByIdAndUpdate(
@@ -536,6 +553,11 @@ exports.refundMoneyToForeigner = async (transaction) => {
         };
 
         await notifyPrivilegedUsersOfFailedTransactions(obj);
+
+        if (res) {
+            const msg = 'You have successfully cancelled this transaction. Your money will be refunded.';
+            return success(res, 200, 'Success', msg);
+        }
     }
 }
 

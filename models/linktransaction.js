@@ -53,7 +53,13 @@ const linkTransactionSchema = mongoose.Schema({
     updatedAt: {
         type: Date
     },
-    administrativeExpensesInNaira: Number
+    administrativeExpensesInNaira: Number,
+    administrativeExpenses: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Expense'
+        }
+    ]
 });
 
 linkTransactionSchema.pre('save', async function (next) {

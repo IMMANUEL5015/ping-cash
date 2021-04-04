@@ -4,7 +4,7 @@ exports.initTransferAndGenUssd = async (url, transaction) => {
     try {
         const response = await axios.post(url, {
             webhook_secret: process.env.WEBHOOK_SECRET,
-            reference: transaction.reference,
+            reference: transaction.dynamicReference,
             mobile_no: transaction.receiverPhoneNumber,
             merchant_id: process.env.MERCHANT_ID,
             webhook_url: process.env.WEBHOOK_URL
@@ -35,7 +35,7 @@ exports.verifyTransfer = async (url, transaction) => {
     try {
         const response = await axios.post(url, {
             merchant_id: process.env.MERCHANT_ID,
-            reference: transaction.reference
+            reference: transaction.dynamicReference
         }, {
                 headers: {
                     Authorization: `Bearer ${process.env.MERCHANT_SECRET}`

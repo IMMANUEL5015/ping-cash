@@ -21,18 +21,18 @@ module.exports = async (error, req, res, next) => {
             const reference = data.reference;
             if (reference) {
                 const transaction = await Transaction.findOneAndUpdate(
-                    { reference },
-                    { status: 'cancelled', reference: generateRef() },
+                    { dynamicReference: reference },
+                    { status: 'cancelled', dynamicReference: generateRef() },
                     { new: true }
                 );
                 //Refund money to the Nigerian Sender
                 if (transaction.transactionType === 'send-within-nigeria') {
-                    await refundMoneyToNigerian(transaction);
+                    return await refundMoneyToNigerian(transaction, res);
                 }
 
                 //Refund money to the Foreign Sender
                 if (transaction.transactionType === 'send-to-nigeria') {
-                    await refundMoneyToForeigner(transaction);
+                    return await refundMoneyToForeigner(transaction, res);
                 }
             }
         }

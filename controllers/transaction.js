@@ -439,7 +439,11 @@ exports.cancelTransaction = catchAsync(async (req, res, next) => {
         const url = 'https://api.fusbeast.com/v1/Transfer/Verify';
 
         //This will be a temporary solution, till fusbeast comes back up
-        success(res, 200, 'Success', 'Transaction cancelled.');
+        res.status(200).json({
+            status: 'Success',
+            message: 'Transaction cancelled successfully!',
+            transaction
+        });
 
         if (transaction) {
             const response = await axios.post(url, {

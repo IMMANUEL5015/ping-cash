@@ -7,6 +7,7 @@ const Email = require('../models/email');
 const cron = require('node-cron');
 const AppError = require('./appError');
 const catchAsync = require('./catchAsync');
+const Expense = require('../models/expense');
 
 exports.generateRef = () => {
     const uniqueString = randomString({ length: 26, numeric: true });
@@ -79,6 +80,44 @@ exports.checkIfLoggedInUserHasRequiredPrivilege = (privilege) => {
 
         return next(new AppError('You do not have the privilege to access this resource.', 403));
     });
+}
+
+exports.calcAdministrativeExpenses = async (dollarInNaira, finalAmountReceived) => {
+    try {
+        let administrativeExpenses = [];
+        let actualAdministrativeExpensesInNaira = 0;
+
+        const expenses = await Expense.find({});
+
+        for (let i = 0; i < expenses.length; i++) {
+            let obj = {};
+            const expense = expenses[i];
+
+            if (expense && expense.flatOrPercentage === 'flat') {
+                obj.expense = expense;
+                obj.amountInNaira = expense.figure;
+
+                actualAdministrativeExpensesInNaira += obj.amountInNaira;
+            }
+
+            if (expense && expense.flatOrPercentage === 'percent') {
+                obj.expense = expense;
+                const { figure } = expense;
+
+                const expenseCut = (figure / 100) * dollarInNaira;
+
+                obj.amountInNaira = (expenseCut * Number(finalAmountReceived));
+
+                actualAdministrativeExpensesInNaira += obj.amountInNaira;
+            }
+
+            administrativeExpenses.push(obj);
+        }
+
+        return [administrativeExpenses, actualAdministrativeExpensesInNaira];
+    } catch (error) {
+        console.error(error);
+    }
 }
 
 cron.schedule('*/15 * * * * *', async () => {

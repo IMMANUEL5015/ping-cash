@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const ChargeRate = require('../models/chargerate');
 const CreditRate = require('../models/creditrate');
 const axios = require('axios');
+const { calcAdministrativeExpenses } = require('../utils/otherUtils');
 
 const transactionSchema = mongoose.Schema({
     transactionType: {
@@ -89,15 +90,22 @@ const transactionSchema = mongoose.Schema({
     },
     session_id: String,
     exchangeRate: String,
+    initialExchangeRate: String,
+    adminExchangeRate: String,
     paymentIntent: String,
     authorization_code: String,
-    administrativeExpensesInNaira: Number,
+    administrativeExpensesInNaira: Number, //Based on the percentage set for admin expenses
     administrativeExpenses: [
         {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Expense'
+            expense: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Expense'
+            },
+            amountInNaira: Number
         }
-    ]
+    ],
+    actualAdministrativeExpensesInNaira: Number, //The reality
+    administrativeExpensesOverflow: String, //The difference between the ideal and the real
 });
 
 transactionSchema.pre('save', async function (next) {
@@ -169,10 +177,17 @@ transactionSchema.pre('save', async function (next) {
 
         //Set the exchange rate that was used for the transaction
         this.exchangeRate = exchangeRate;
+        this.initialExchangeRate = dollarInNaira;
+        this.adminExchangeRate = adminCut;
 
         //Set the finalAmountReceivedInNaira
         this.finalAmountReceivedInNaira = (Number(this.exchangeRate) * Number(this.finalAmountReceived));
         this.administrativeExpensesInNaira = (adminCut * Number(this.finalAmountReceived));
+
+        const result = await calcAdministrativeExpenses(dollarInNaira, this.finalAmountReceived);
+        this.administrativeExpenses = result[0];
+        this.actualAdministrativeExpensesInNaira = result[1];
+        this.administrativeExpensesOverflow = this.administrativeExpensesInNaira - this.actualAdministrativeExpensesInNaira;
     }
 
     next();

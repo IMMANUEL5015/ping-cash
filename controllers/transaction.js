@@ -521,7 +521,7 @@ exports.refundMoneyToNigerian = async (transaction, res) => {
     }
 }
 
-exports.refundMoneyToForeigner = async (transaction) => {
+exports.refundMoneyToForeigner = async (transaction, res) => {
     try {
         const { paymentIntent } = transaction;
         await stripe.refunds.create({

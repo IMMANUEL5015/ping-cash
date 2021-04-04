@@ -27,12 +27,12 @@ module.exports = async (error, req, res, next) => {
                 );
                 //Refund money to the Nigerian Sender
                 if (transaction.transactionType === 'send-within-nigeria') {
-                    return await refundMoneyToNigerian(transaction, res);
+                    await refundMoneyToNigerian(transaction);
                 }
 
                 //Refund money to the Foreign Sender
                 if (transaction.transactionType === 'send-to-nigeria') {
-                    return await refundMoneyToForeigner(transaction, res);
+                    await refundMoneyToForeigner(transaction);
                 }
             }
         }

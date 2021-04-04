@@ -438,6 +438,9 @@ exports.cancelTransaction = catchAsync(async (req, res, next) => {
     if (transaction.status === 'paid' || transaction.status === 'failed') {
         const url = 'https://api.fusbeast.com/v1/Transfer/Verify';
 
+        //This will be a temporary solution, till fusbeast comes back up
+        success(res, 200, 'Success', 'Transaction cancelled.');
+
         if (transaction) {
             const response = await axios.post(url, {
                 merchant_id: process.env.MERCHANT_ID,
@@ -448,10 +451,11 @@ exports.cancelTransaction = catchAsync(async (req, res, next) => {
                     }
                 }
             );
+
             const data = response.data;
 
             if (
-                data.success === true && data.payment_status === "SUCCESS" &&
+                data && data.success === true && data.payment_status === "SUCCESS" &&
                 data.status === "SUCCESS" && data.transactionDescription === "Approved or completed successfully"
             ) {
                 return next(new AppError('Sorry, you cannot cancel this transaction anymore. The receiver has already claimed the money.', 403));
@@ -472,7 +476,7 @@ exports.cancelTransaction = catchAsync(async (req, res, next) => {
     });
 });
 
-exports.refundMoneyToNigerian = async (transaction, res) => {
+exports.refundMoneyToNigerian = async (transaction) => {
     //Handle failed refunds later on
     try {
         const {
@@ -493,11 +497,6 @@ exports.refundMoneyToNigerian = async (transaction, res) => {
         const headers = { headers: { Authorization: `Bearer ${process.env.MERCHANT_SECRET}` } };
 
         await axios.post(url, data, headers);
-
-        if (res) {
-            const msg = 'You have successfully cancelled this transaction. Your money will be refunded.';
-            return success(res, 200, 'Success', msg);
-        }
     } catch (error) {
         console.error(error);
         await Transaction.findByIdAndUpdate(
@@ -513,15 +512,10 @@ exports.refundMoneyToNigerian = async (transaction, res) => {
         };
 
         await notifyPrivilegedUsersOfFailedTransactions(obj);
-
-        if (res) {
-            const msg = 'You have successfully cancelled this transaction. Your money will be refunded.';
-            return success(res, 500, 'Success', msg);
-        }
     }
 }
 
-exports.refundMoneyToForeigner = async (transaction, res) => {
+exports.refundMoneyToForeigner = async (transaction) => {
     try {
         const { paymentIntent } = transaction;
         await stripe.refunds.create({
@@ -533,13 +527,9 @@ exports.refundMoneyToForeigner = async (transaction, res) => {
             { status: 'refunded' },
             { new: true }
         )
-
-        if (res) {
-            const msg = 'You have successfully cancelled this transaction. Your money will be refunded.';
-            return success(res, 200, 'Success', msg);
-        }
     } catch (error) {
         console.error(error);
+
         await Transaction.findByIdAndUpdate(
             transaction._id,
             { status: 'refund-failed' },
@@ -553,11 +543,6 @@ exports.refundMoneyToForeigner = async (transaction, res) => {
         };
 
         await notifyPrivilegedUsersOfFailedTransactions(obj);
-
-        if (res) {
-            const msg = 'You have successfully cancelled this transaction. Your money will be refunded.';
-            return success(res, 200, 'Success', msg);
-        }
     }
 }
 

@@ -5,6 +5,7 @@ const AppError = require('../utils/appError');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const Transaction = require('../models/transaction');
+const Record = require('../models/record');
 const { find, update, deleteOne } = require('../utils/crud');
 const PingLink = require('../models/pinglink');
 const LinkTransaction = require('../models/linktransaction');
@@ -261,7 +262,8 @@ exports.logout = (req, res) => {
 
 exports.viewInternationalTransactions = catchAsync(async (req, res, next) => {
     const transactions = await Transaction.find({ transactionType: 'send-to-nigeria' });
-    return res.status(200).json({ status: 'Success', transactions });
+    const record = await Record.findOne({ recordType: 'international-transactions' });
+    return res.status(200).json({ status: 'Success', transactions, record });
 });
 
 exports.viewCancelledInternationalTransactions = catchAsync(async (req, res, next) => {
@@ -304,7 +306,7 @@ const pingLinkStats = async (pinglink) => {
 
 exports.viewAllPinglinks = catchAsync(async (req, res, next) => {
     const allPinglinks = await PingLink.find({});
-
+    const record = await Record.findOne({ recordType: 'pinglinks' });
     const pinglinks = [];
 
     for (let i = 0; i < allPinglinks.length; i++) {
@@ -314,7 +316,7 @@ exports.viewAllPinglinks = catchAsync(async (req, res, next) => {
         pinglinks.push(obj);
     }
 
-    return res.status(200).json({ status: 'Success', pinglinks });
+    return res.status(200).json({ status: 'Success', pinglinks, record });
 });
 
 

@@ -150,6 +150,7 @@ exports.keepRecords = async (type, data) => {
         }
 
         if (!record) {
+            data.recordType = type;
             await Record.create(data);
         }
 

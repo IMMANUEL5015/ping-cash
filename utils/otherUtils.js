@@ -135,7 +135,7 @@ cron.schedule('*/15 * * * * *', async () => {
 
 exports.keepRecords = async (type, data) => {
     try {
-        const record = await Record.findOne({ type });
+        const record = await Record.findOne({ recordType: type });
 
         if (record) {
             await Record.findByIdAndUpdate(record._id, {

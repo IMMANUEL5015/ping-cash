@@ -16,7 +16,8 @@ const {
 } = require('../utils/fuspay_apis');
 const {
     generateRef,
-    notifyPrivilegedUsersOfFailedTransactions
+    notifyPrivilegedUsersOfFailedTransactions,
+    keepRecords
 } = require('../utils/otherUtils');
 const { success } = require('../utils/responses');
 
@@ -287,6 +288,21 @@ cron.schedule('59 23 * * *', async () => {
                             {
                                 new: true
                             });
+
+                        if (normalTransaction.transactionType === 'send-to-nigeria') {
+                            await keepRecords(
+                                'international-transactions',
+                                {
+                                    totalAmount: Number(normalTransaction.amount),
+                                    totalFinalAmountPaid: Number(normalTransaction.finalAmountPaid),
+                                    totalFinalAmountReceived: Number(normalTransaction.finalAmountReceived),
+                                    totalFinalAmountReceivedInNaira: Number(normalTransaction.finalAmountReceivedInNaira),
+                                    totalAdministrativeExpensesInNaira: Number(normalTransaction.administrativeExpensesInNaira),
+                                    totalActualAdministrativeExpensesInNaira: Number(normalTransaction.actualAdministrativeExpensesInNaira),
+                                    totalAdministrativeExpensesOverflow: Number(normalTransaction.administrativeExpensesOverflow)
+                                }
+                            );
+                        }
                     }
 
                     const linkTransaction = await LinkTransaction.findById(transaction._id);
@@ -295,6 +311,19 @@ cron.schedule('59 23 * * *', async () => {
                             transaction._id,
                             { status: 'received' },
                             { new: true }
+                        );
+
+                        await keepRecords(
+                            'pinglinks',
+                            {
+                                totalAmount: Number(linkTransaction.amount),
+                                totalFinalAmountPaid: Number(linkTransaction.amount),
+                                totalFinalAmountReceived: Number(linkTransaction.finalAmountReceived),
+                                totalFinalAmountReceivedInNaira: Number(linkTransaction.finalAmountReceivedInNaira),
+                                totalAdministrativeExpensesInNaira: Number(linkTransaction.administrativeExpensesInNaira),
+                                totalActualAdministrativeExpensesInNaira: Number(linkTransaction.actualAdministrativeExpensesInNaira),
+                                totalAdministrativeExpensesOverflow: Number(linkTransaction.administrativeExpensesOverflow)
+                            }
                         );
 
                         const pingLink = await PingLink.findById(linkTransaction.pingLink);

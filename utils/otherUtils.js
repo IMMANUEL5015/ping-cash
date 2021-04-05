@@ -8,6 +8,7 @@ const cron = require('node-cron');
 const AppError = require('./appError');
 const catchAsync = require('./catchAsync');
 const Expense = require('../models/expense');
+const Record = require('../models/record');
 
 exports.generateRef = () => {
     const uniqueString = randomString({ length: 26, numeric: true });
@@ -131,3 +132,29 @@ cron.schedule('*/15 * * * * *', async () => {
         console.error(error);
     }
 });
+
+exports.keepRecords = async (type, data) => {
+    try {
+        const record = await Record.findOne({ type });
+
+        if (record) {
+            await Record.findByIdAndUpdate(record._id, {
+                totalAmount: record.totalAmount + data.totalAmount,
+                totalFinalAmountPaid: record.totalFinalAmountPaid + data.totalFinalAmountPaid,
+                totalFinalAmountReceived: record.totalFinalAmountReceived + data.totalFinalAmountReceived,
+                totalFinalAmountReceivedInNaira: record.totalFinalAmountReceivedInNaira + data.totalFinalAmountReceivedInNaira,
+                totalAdministrativeExpensesInNaira: record.totalAdministrativeExpensesInNaira + data.totalAdministrativeExpensesInNaira,
+                totalActualAdministrativeExpensesInNaira: record.totalActualAdministrativeExpensesInNaira + data.totalActualAdministrativeExpensesInNaira,
+                totalAdministrativeExpensesOverflow: record.totalAdministrativeExpensesOverflow + data.totalAdministrativeExpensesOverflow
+            }, { new: true });
+        }
+
+        if (!record) {
+            await Record.create(data);
+        }
+
+        return 'Record Updated Successfully!';
+    } catch (error) {
+        console.log(error);
+    }
+}

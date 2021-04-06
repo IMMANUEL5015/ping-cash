@@ -11,4 +11,9 @@ const privilegeSchema = mongoose.Schema({
     }
 });
 
+privilegeSchema.pre(/^find/, function (next) {
+    this.populate('pcategory');
+    next();
+});
+
 module.exports = Privilege = mongoose.model('Privilege', privilegeSchema);

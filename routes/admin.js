@@ -99,6 +99,12 @@ router.get(
     admin.viewFailedTransactions
 );
 
+router.get(
+    '/failed_pinglink_transactions',
+    checkIfLoggedInUserHasRequiredPrivilege('view-failed-transactions'),
+    admin.viewFailedPinglinkTransactions
+);
+
 // router.post(
 //     '/make_payout/',
 //     admin.makePayout

@@ -346,17 +346,39 @@ const findAllFailedTransactions = async () => {
     const transactions = await Transaction.find({ status: 'failed' });
     failedTransactions = failedTransactions.concat(transactions);
 
-    const linkTransactions = await LinkTransaction.find({ status: 'failed' }).populate('pingLink');
-    failedTransactions = failedTransactions.concat(linkTransactions);
-
     const failedRefunds = await Transaction.find({ status: 'refund-failed' });
     failedTransactions = failedTransactions.concat(failedRefunds);
 
     return failedTransactions;
 }
 
+const findAllFailedPinglinkTransactions = async () => {
+    let failedTransactions = [];
+
+    const linkTransactions = await LinkTransaction.find({ status: 'failed' })
+        .select(
+            `administrativeExpenses reference amount fullName 
+            email phoneNumber charges finalAmountReceived 
+            exchangeRate finalAmountReceivedInNaira 
+            administrativeExpensesInNaira administrativeExpensesOverflow 
+            actualAdministrativeExpensesInNaira`
+        );
+    failedTransactions = failedTransactions.concat(linkTransactions);
+
+    return failedTransactions;
+}
+
 exports.viewFailedTransactions = catchAsync(async (req, res, next) => {
     const failedTransactions = await findAllFailedTransactions();
+
+    return res.status(200).json({
+        status: 'Success',
+        failedTransactions
+    });
+});
+
+exports.viewFailedPinglinkTransactions = catchAsync(async (req, res, next) => {
+    const failedTransactions = await findAllFailedPinglinkTransactions();
 
     return res.status(200).json({
         status: 'Success',

@@ -1,5 +1,6 @@
 const axios = require('axios');
 const { notifyPrivilegedUsersOfFailedTransactions } = require('./otherUtils');
+const Transaction = require('../models/transaction');
 
 exports.initTransferAndGenUssd = async (url, transaction) => {
     try {

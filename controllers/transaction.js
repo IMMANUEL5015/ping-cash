@@ -12,7 +12,7 @@ const cron = require('node-cron');
 const {
     verifyPaymentToFuspay, verifyTransfer,
     initTransferAndGenUssd,
-    payPinglinkCreator
+    payPinglinkCreator, authorizeMobileTransfer
 } = require('../utils/fuspay_apis');
 const {
     generateRef,
@@ -205,56 +205,26 @@ exports.verifyStripePayment = async (req, res, next) => {
 exports.authorizeTransfer = async (req, res, next) => {
     let transaction;
     let authorization_code;
-    try {
-        const data = req.body;
-        if (
-            data.success === 'true' && data.message === 'Succcessful' &&
-            data.webhook_secret === process.env.WEBHOOK_SECRET
-        ) {
-            transaction = await Transaction.findOne({ dynamicReference: data.reference });
-            authorization_code = data.authorization_code;
-            await Transaction.findByIdAndUpdate(
-                transaction._id,
-                { authorization_code: data.authorization_code },
-                { new: true }
-            )
-            if (transaction.status === 'paid') {
-                const authorize_url = "https://api.fusbeast.com/v1/MobileTransfer/Authorize";
+    const data = req.body;
+    if (
+        data.success === 'true' && data.message === 'Succcessful' &&
+        data.webhook_secret === process.env.WEBHOOK_SECRET
+    ) {
+        transaction = await Transaction.findOne({ dynamicReference: data.reference });
+        authorization_code = data.authorization_code;
+        await Transaction.findByIdAndUpdate(
+            transaction._id,
+            { authorization_code: data.authorization_code },
+            { new: true }
+        )
+        if (transaction.status === 'paid') {
+            const authorize_url = "https://api.fusbeast.com/v1/MobileTransfer/Authorize";
 
-                //Authorize Transfer
-                await axios.post(authorize_url, {
-                    authorization_code: data.authorization_code,
-                    merchant_id: process.env.MERCHANT_ID,
-                    amount: `${Math.round(Number(transaction.finalAmountReceivedInNaira))}`
-                },
-                    {
-                        headers: {
-                            Authorization: `Bearer ${process.env.MERCHANT_SECRET}`
-                        }
-                    }
-                )
-            }
-        }
-
-        res.status(200).json({ status: 'Successful', message: "Successful" });
-    } catch (error) {
-        console.error(error);
-        if (transaction) {
-            await Transaction.findByIdAndUpdate(
-                transaction._id,
-                { authorization_code, status: 'failed' },
-                { new: true }
-            )
-
-            const obj = {
-                message: 'An error occured when a customer tried to claim the amount pinged to his phone number.',
-                type: 'send-money-transaction',
-                transactionId: transaction._id
-            };
-
-            await notifyPrivilegedUsersOfFailedTransactions(obj);
+            //Authorize Transfer
+            await authorizeMobileTransfer(authorize_url, data, transaction);
         }
     }
+    res.status(200).json({ status: 'Successful', message: "Successful" });
 }
 
 //Verify paid transactions at 11:59pm every day.

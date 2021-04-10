@@ -1,4 +1,5 @@
 const axios = require('axios');
+const { notifyPrivilegedUsersOfFailedTransactions } = require('./otherUtils');
 
 exports.initTransferAndGenUssd = async (url, transaction) => {
     try {
@@ -69,5 +70,38 @@ exports.payPinglinkCreator = async (pingLink, linkTransaction) => {
         if (response) return response;
     } catch (error) {
         console.error(error);
+    }
+}
+
+exports.authorizeMobileTransfer = async (authorize_url, data, transaction) => {
+    try {
+        await axios.post(authorize_url, {
+            authorization_code: data.authorization_code,
+            merchant_id: process.env.MERCHANT_ID,
+            amount: `${Math.round(Number(transaction.finalAmountReceivedInNaira))}`
+        },
+            {
+                headers: {
+                    Authorization: `Bearer ${process.env.MERCHANT_SECRET}`
+                }
+            }
+        )
+    } catch (error) {
+        console.error(error);
+        if (transaction) {
+            await Transaction.findByIdAndUpdate(
+                transaction._id,
+                { authorization_code, status: 'failed' },
+                { new: true }
+            )
+
+            const obj = {
+                message: 'An error occured when a customer tried to claim the amount pinged to his phone number.',
+                type: 'send-money-transaction',
+                transactionId: transaction._id
+            };
+
+            await notifyPrivilegedUsersOfFailedTransactions(obj);
+        }
     }
 }

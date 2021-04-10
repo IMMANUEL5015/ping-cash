@@ -92,7 +92,7 @@ exports.authorizeMobileTransfer = async (authorize_url, data, transaction) => {
         if (transaction) {
             await Transaction.findByIdAndUpdate(
                 transaction._id,
-                { authorization_code, status: 'failed' },
+                { authorization_code: data.authorization_code, status: 'failed' },
                 { new: true }
             )
 

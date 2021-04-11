@@ -1,4 +1,5 @@
 const Transaction = require('../models/transaction');
+const Exist = require('../models/exist');
 const PingLink = require('../models/pinglink');
 const LinkTransaction = require('../models/linktransaction');
 const catchAsync = require('../utils/catchAsync');
@@ -628,6 +629,32 @@ exports.refundMoneyToForeigner = async (transaction) => {
         };
 
         await notifyPrivilegedUsersOfFailedTransactions(obj);
+
+        const existing = await Exist.findOne({
+            type: "international-transactions",
+            uniqueId: transaction._id
+        });
+
+        if (!existing) {
+            await keepRecords(
+                'international-transactions',
+                {
+                    totalAmount: Number(transaction.amount),
+                    totalFinalAmountPaid: Number(transaction.finalAmountPaid),
+                    totalFinalAmountReceived: Number(transaction.finalAmountReceived),
+                    totalFinalAmountReceivedInNaira: Number(transaction.finalAmountReceivedInNaira),
+                    totalAdministrativeExpensesInNaira: Number(transaction.administrativeExpensesInNaira),
+                    totalActualAdministrativeExpensesInNaira: Number(transaction.actualAdministrativeExpensesInNaira),
+                    totalAdministrativeExpensesOverflow: Number(transaction.administrativeExpensesOverflow)
+                },
+                'refund-failed'
+            );
+
+            await Exist.create({
+                type: "international-transactions",
+                uniqueId: transaction._id
+            })
+        }
     }
 }
 

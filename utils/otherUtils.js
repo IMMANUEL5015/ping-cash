@@ -83,12 +83,12 @@ exports.checkIfLoggedInUserHasRequiredPrivilege = (privilege) => {
     });
 }
 
-exports.calcAdministrativeExpenses = async (dollarInNaira, finalAmountReceived) => {
+exports.calcAdministrativeExpenses = async (dollarInNaira, finalAmountReceived, type) => {
     try {
         let administrativeExpenses = [];
         let actualAdministrativeExpensesInNaira = 0;
 
-        const expenses = await Expense.find({});
+        const expenses = await Expense.find({ type: { $in: [type, 'general'] } });
 
         for (let i = 0; i < expenses.length; i++) {
             let obj = {};

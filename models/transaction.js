@@ -184,7 +184,7 @@ transactionSchema.pre('save', async function (next) {
         this.finalAmountReceivedInNaira = (Number(this.exchangeRate) * Number(this.finalAmountReceived));
         this.administrativeExpensesInNaira = (adminCut * Number(this.finalAmountReceived));
 
-        const result = await calcAdministrativeExpenses(dollarInNaira, this.finalAmountReceived);
+        const result = await calcAdministrativeExpenses(dollarInNaira, this.finalAmountReceived, 'send-money-to-nigeria');
         this.administrativeExpenses = result[0];
         this.actualAdministrativeExpensesInNaira = result[1];
         this.administrativeExpensesOverflow = this.administrativeExpensesInNaira - this.actualAdministrativeExpensesInNaira;

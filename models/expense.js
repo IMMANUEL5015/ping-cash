@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
 const expenseSchema = mongoose.Schema({
+    type: {
+        type: String,
+        required: [true, 'Please specify the type of administrative expense.'],
+        enum: ['send-money-to-nigeria', 'pinglink', 'general']
+    },
     name: {
         type: String,
         required: [true, 'Name is required.'],

@@ -281,7 +281,7 @@ exports.viewInternationalTransactions = catchAsync(async (req, res, next) => {
     return res.status(200).json({
         status: 'Success',
         transactions,
-        record,
+        record,//later on will be changed to recordOfReceivedTransactions
         recordOfPendingTransactions,
         recordOfPaidTransactions
     });
@@ -292,7 +292,17 @@ exports.viewCancelledInternationalTransactions = catchAsync(async (req, res, nex
         transactionType: 'send-to-nigeria',
         status: 'cancelled'
     });
-    return res.status(200).json({ status: 'Success', transactions });
+
+    const recordOfCancelledTransactions = await retrieveRecords(
+        'international-transactions',
+        'cancelled'
+    );
+
+    return res.status(200).json({
+        status: 'Success',
+        transactions,
+        recordOfCancelledTransactions
+    });
 });
 
 exports.viewRefundedInternationalTransactions = catchAsync(async (req, res, next) => {

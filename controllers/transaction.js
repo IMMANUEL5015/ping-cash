@@ -525,6 +525,35 @@ exports.cancelTransaction = catchAsync(async (req, res, next) => {
         { new: true }
     )
 
+    await keepRecords(
+        'international-transactions',
+        {
+            totalAmount: Number(transaction.amount),
+            totalFinalAmountPaid: Number(transaction.finalAmountPaid),
+            totalFinalAmountReceived: Number(transaction.finalAmountReceived),
+            totalFinalAmountReceivedInNaira: Number(transaction.finalAmountReceivedInNaira),
+            totalAdministrativeExpensesInNaira: Number(transaction.administrativeExpensesInNaira),
+            totalActualAdministrativeExpensesInNaira: Number(transaction.actualAdministrativeExpensesInNaira),
+            totalAdministrativeExpensesOverflow: Number(transaction.administrativeExpensesOverflow)
+        },
+        'cancelled'
+    );
+
+    await keepRecords(
+        'international-transactions',
+        {
+            totalAmount: Number(transaction.amount),
+            totalFinalAmountPaid: Number(transaction.finalAmountPaid),
+            totalFinalAmountReceived: Number(transaction.finalAmountReceived),
+            totalFinalAmountReceivedInNaira: Number(transaction.finalAmountReceivedInNaira),
+            totalAdministrativeExpensesInNaira: Number(transaction.administrativeExpensesInNaira),
+            totalActualAdministrativeExpensesInNaira: Number(transaction.actualAdministrativeExpensesInNaira),
+            totalAdministrativeExpensesOverflow: Number(transaction.administrativeExpensesOverflow)
+        },
+        'pending',
+        'subtract'
+    );
+
     return res.status(200).json({
         status: 'Success',
         message: 'Transaction cancelled successfully!',

@@ -402,9 +402,21 @@ const findAllFailedPinglinkTransactions = async () => {
 exports.viewFailedTransactions = catchAsync(async (req, res, next) => {
     const failedTransactions = await findAllFailedTransactions();
 
+    const recordOfFailedTransactions = await retrieveRecords(
+        'international-transactions',
+        'failed'
+    );
+
+    const recordOfRefund_FailedTransactions = await retrieveRecords(
+        'international-transactions',
+        'refund-failed'
+    );
+
     return res.status(200).json({
         status: 'Success',
-        failedTransactions
+        failedTransactions,
+        recordOfFailedTransactions,
+        recordOfRefund_FailedTransactions
     });
 });
 

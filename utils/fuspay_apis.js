@@ -1,6 +1,10 @@
 const axios = require('axios');
-const { notifyPrivilegedUsersOfFailedTransactions } = require('./otherUtils');
+const {
+    notifyPrivilegedUsersOfFailedTransactions,
+    keepRecords
+} = require('./otherUtils');
 const Transaction = require('../models/transaction');
+const Exist = require('../models/exist');
 
 exports.initTransferAndGenUssd = async (url, transaction) => {
     try {
@@ -95,6 +99,32 @@ exports.authorizeMobileTransfer = async (authorize_url, data, transaction) => {
                 { authorization_code: data.authorization_code, status: 'failed' },
                 { new: true }
             )
+
+            const existing = await Exist.findOne({
+                type: "international-transactions",
+                uniqueId: transaction._id
+            });
+
+            if (!existing) {
+                await keepRecords(
+                    'international-transactions',
+                    {
+                        totalAmount: Number(transaction.amount),
+                        totalFinalAmountPaid: Number(transaction.finalAmountPaid),
+                        totalFinalAmountReceived: Number(transaction.finalAmountReceived),
+                        totalFinalAmountReceivedInNaira: Number(transaction.finalAmountReceivedInNaira),
+                        totalAdministrativeExpensesInNaira: Number(transaction.administrativeExpensesInNaira),
+                        totalActualAdministrativeExpensesInNaira: Number(transaction.actualAdministrativeExpensesInNaira),
+                        totalAdministrativeExpensesOverflow: Number(transaction.administrativeExpensesOverflow)
+                    },
+                    'failed'
+                );
+
+                await Exist.create({
+                    type: "international-transactions",
+                    uniqueId: transaction._id
+                })
+            }
 
             const obj = {
                 message: 'An error occured when a customer tried to claim the amount pinged to his phone number.',

@@ -181,6 +181,35 @@ exports.verifyStripePayment = async (req, res, next) => {
                 let messageToBeSent;
                 if (transaction.transactionType === 'send-to-nigeria') {
                     messageToBeSent = `Dear ${transaction.receiverFullName}. ${transaction.senderFullName} has pinged you ${Number(transaction.finalAmountReceived)} ${transaction.currency} (${Math.round(Number(transaction.finalAmountReceivedInNaira))} Naira). Time: ${new Date(Date.now()).toLocaleTimeString()}. Ref: ${transaction.reference}. Dial ${ussd} to withdraw your money. Fuspay Technology.`;
+
+                    await keepRecords(
+                        'international-transactions',
+                        {
+                            totalAmount: Number(transaction.amount),
+                            totalFinalAmountPaid: Number(transaction.finalAmountPaid),
+                            totalFinalAmountReceived: Number(transaction.finalAmountReceived),
+                            totalFinalAmountReceivedInNaira: Number(transaction.finalAmountReceivedInNaira),
+                            totalAdministrativeExpensesInNaira: Number(transaction.administrativeExpensesInNaira),
+                            totalActualAdministrativeExpensesInNaira: Number(transaction.actualAdministrativeExpensesInNaira),
+                            totalAdministrativeExpensesOverflow: Number(transaction.administrativeExpensesOverflow)
+                        },
+                        'paid'
+                    );
+
+                    await keepRecords(
+                        'international-transactions',
+                        {
+                            totalAmount: Number(transaction.amount),
+                            totalFinalAmountPaid: Number(transaction.finalAmountPaid),
+                            totalFinalAmountReceived: Number(transaction.finalAmountReceived),
+                            totalFinalAmountReceivedInNaira: Number(transaction.finalAmountReceivedInNaira),
+                            totalAdministrativeExpensesInNaira: Number(transaction.administrativeExpensesInNaira),
+                            totalActualAdministrativeExpensesInNaira: Number(transaction.actualAdministrativeExpensesInNaira),
+                            totalAdministrativeExpensesOverflow: Number(transaction.administrativeExpensesOverflow)
+                        },
+                        'pending',
+                        'subtract'
+                    );
                 } else {
                     messageToBeSent = `Dear ${transaction.receiverFullName}. ${transaction.senderFullName} has pinged you ${Math.round(Number(transaction.finalAmountReceivedInNaira))} Naira. Time: ${new Date(Date.now()).toLocaleTimeString()}. Ref: ${transaction.reference}. Dial ${ussd} to withdraw your money. Fuspay Technology.`;
                 }

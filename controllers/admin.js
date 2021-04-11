@@ -273,12 +273,17 @@ exports.viewInternationalTransactions = catchAsync(async (req, res, next) => {
         'international-transactions',
         'pending'
     );
+    const recordOfPaidTransactions = await retrieveRecords(
+        'international-transactions',
+        'paid'
+    );
 
     return res.status(200).json({
         status: 'Success',
         transactions,
         record,
-        recordOfPendingTransactions
+        recordOfPendingTransactions,
+        recordOfPaidTransactions
     });
 });
 

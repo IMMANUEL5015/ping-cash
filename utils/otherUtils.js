@@ -133,11 +133,11 @@ cron.schedule('*/15 * * * * *', async () => {
     }
 });
 
-exports.keepRecords = async (type, data, status) => {
+exports.keepRecords = async (type, data, status, subtract) => {
     try {
         const record = await Record.findOne({ recordType: type, status });
 
-        if (record) {
+        if (record && !subtract) {
             await Record.findByIdAndUpdate(record._id, {
                 totalAmount: record.totalAmount + data.totalAmount,
                 totalFinalAmountPaid: record.totalFinalAmountPaid + data.totalFinalAmountPaid,
@@ -146,6 +146,18 @@ exports.keepRecords = async (type, data, status) => {
                 totalAdministrativeExpensesInNaira: record.totalAdministrativeExpensesInNaira + data.totalAdministrativeExpensesInNaira,
                 totalActualAdministrativeExpensesInNaira: record.totalActualAdministrativeExpensesInNaira + data.totalActualAdministrativeExpensesInNaira,
                 totalAdministrativeExpensesOverflow: record.totalAdministrativeExpensesOverflow + data.totalAdministrativeExpensesOverflow
+            }, { new: true });
+        }
+
+        if (record && subtract) {
+            await Record.findByIdAndUpdate(record._id, {
+                totalAmount: record.totalAmount - data.totalAmount,
+                totalFinalAmountPaid: record.totalFinalAmountPaid - data.totalFinalAmountPaid,
+                totalFinalAmountReceived: record.totalFinalAmountReceived - data.totalFinalAmountReceived,
+                totalFinalAmountReceivedInNaira: record.totalFinalAmountReceivedInNaira - data.totalFinalAmountReceivedInNaira,
+                totalAdministrativeExpensesInNaira: record.totalAdministrativeExpensesInNaira - data.totalAdministrativeExpensesInNaira,
+                totalActualAdministrativeExpensesInNaira: record.totalActualAdministrativeExpensesInNaira - data.totalActualAdministrativeExpensesInNaira,
+                totalAdministrativeExpensesOverflow: record.totalAdministrativeExpensesOverflow - data.totalAdministrativeExpensesOverflow
             }, { new: true });
         }
 

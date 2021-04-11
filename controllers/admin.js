@@ -265,7 +265,7 @@ exports.viewInternationalTransactions = catchAsync(async (req, res, next) => {
         status: {
             $in: ['received', 'paid', 'pending']
         }
-    });
+    }).sort('-createdAt');
 
     const record = await retrieveRecords('international-transactions', 'received');
     const recordOfPendingTransactions = await retrieveRecords(
@@ -290,7 +290,7 @@ exports.viewCancelledInternationalTransactions = catchAsync(async (req, res, nex
     const transactions = await Transaction.find({
         transactionType: 'send-to-nigeria',
         status: 'cancelled'
-    });
+    }).sort('-createdAt');
 
     const recordOfCancelledTransactions = await retrieveRecords(
         'international-transactions',
@@ -308,7 +308,7 @@ exports.viewRefundedInternationalTransactions = catchAsync(async (req, res, next
     const transactions = await Transaction.find({
         transactionType: 'send-to-nigeria',
         status: 'refunded'
-    });
+    }).sort('-createdAt');
 
     const recordOfRefundedTransactions = await retrieveRecords(
         'international-transactions',
@@ -345,7 +345,7 @@ const pingLinkStats = async (pinglink) => {
 }
 
 exports.viewAllPinglinks = catchAsync(async (req, res, next) => {
-    const allPinglinks = await PingLink.find({});
+    const allPinglinks = await PingLink.find({}).sort('-createdAt');
     const record = await retrieveRecords('pinglinks', 'received');
     const recordOfPaidPinglinkTransactions = await retrieveRecords(
         'pinglinks',
@@ -372,7 +372,9 @@ exports.viewAllPinglinks = catchAsync(async (req, res, next) => {
 
 exports.findPinglink = find(PingLink);
 exports.viewPinglink = catchAsync(async (req, res, next) => {
-    const linkTransactions = await LinkTransaction.find({ pingLink: req.data.id });
+    const linkTransactions = await LinkTransaction.find({ pingLink: req.data.id })
+        .sort('-createdAt');
+
     const stats = await pingLinkStats(req.data);
 
     return res.status(200).json({
@@ -391,29 +393,22 @@ exports.viewPinglinkTransaction = (req, res, next) => {
 }
 
 const findAllFailedTransactions = async () => {
-    let failedTransactions = [];
-
-    const transactions = await Transaction.find({ status: 'failed' });
-    failedTransactions = failedTransactions.concat(transactions);
-
-    const failedRefunds = await Transaction.find({ status: 'refund-failed' });
-    failedTransactions = failedTransactions.concat(failedRefunds);
+    const failedTransactions = await Transaction.find({
+        status: { $in: ['failed', 'refund-failed'] }
+    }).sort('-createdAt');
 
     return failedTransactions;
 }
 
 const findAllFailedPinglinkTransactions = async () => {
-    let failedTransactions = [];
-
-    const linkTransactions = await LinkTransaction.find({ status: 'failed' })
+    const failedTransactions = await LinkTransaction.find({ status: 'failed' })
         .select(
             `administrativeExpenses reference amount fullName 
             email phoneNumber charges finalAmountReceived 
             exchangeRate finalAmountReceivedInNaira 
             administrativeExpensesInNaira administrativeExpensesOverflow 
-            actualAdministrativeExpensesInNaira`
-        );
-    failedTransactions = failedTransactions.concat(linkTransactions);
+            actualAdministrativeExpensesInNaira createdAt`
+        ).sort('-createdAt');
 
     return failedTransactions;
 }

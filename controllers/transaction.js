@@ -222,6 +222,20 @@ exports.verifyStripePayment = async (req, res, next) => {
                     status: 'paid'
                 }, { new: true })
 
+                await keepRecords(
+                    'pinglinks',
+                    {
+                        totalAmount: Number(linkTransaction.amount),
+                        totalFinalAmountPaid: Number(linkTransaction.amount),
+                        totalFinalAmountReceived: Number(linkTransaction.finalAmountReceived),
+                        totalFinalAmountReceivedInNaira: Number(linkTransaction.finalAmountReceivedInNaira),
+                        totalAdministrativeExpensesInNaira: Number(linkTransaction.administrativeExpensesInNaira),
+                        totalActualAdministrativeExpensesInNaira: Number(linkTransaction.actualAdministrativeExpensesInNaira),
+                        totalAdministrativeExpensesOverflow: Number(linkTransaction.administrativeExpensesOverflow)
+                    },
+                    'paid'
+                );
+
                 const response = await payPinglinkCreator(pingLink, linkTransaction);
                 if (response) {
                     const messageToBeSent = `Dear ${pingLink.linkName}. ${linkTransaction.fullName} has pinged you ${linkTransaction.finalAmountReceived} Dollars (${Math.floor(Number(linkTransaction.finalAmountReceivedInNaira))} Naira) via your pinglink. Time: ${new Date(Date.now()).toLocaleTimeString()}. Fuspay Technology.`;
@@ -232,6 +246,28 @@ exports.verifyStripePayment = async (req, res, next) => {
                     await LinkTransaction.findByIdAndUpdate(linkTransaction._id, {
                         status: 'failed'
                     }, { new: true })
+
+                    await keepRecords(
+                        'pinglinks',
+                        {
+                            totalAmount: Number(linkTransaction.amount),
+                            totalFinalAmountPaid: Number(linkTransaction.amount),
+                            totalFinalAmountReceived: Number(linkTransaction.finalAmountReceived),
+                            totalFinalAmountReceivedInNaira: Number(linkTransaction.finalAmountReceivedInNaira),
+                            totalAdministrativeExpensesInNaira: Number(linkTransaction.administrativeExpensesInNaira),
+                            totalActualAdministrativeExpensesInNaira: Number(linkTransaction.actualAdministrativeExpensesInNaira),
+                            totalAdministrativeExpensesOverflow: Number(linkTransaction.administrativeExpensesOverflow)
+                        },
+                        'failed'
+                    );
+
+                    await Exist.create(
+                        {
+                            type: 'pinglinks',
+                            status: 'failed',
+                            uniqueId: linkTransaction._id
+                        }
+                    )
 
                     const obj = {
                         message: 'An error occured when trying to transfer money to a pinglink creator.',
@@ -319,6 +355,29 @@ cron.schedule('59 23 * * *', async () => {
                                 },
                                 'received'
                             );
+
+                            const existingFailed = await Exist.findOne({
+                                type: "international-transactions",
+                                uniqueId: normalTransaction._id,
+                                status: 'failed'
+                            });
+
+                            if (existingFailed) {
+                                await keepRecords(
+                                    'international-transactions',
+                                    {
+                                        totalAmount: Number(normalTransaction.amount),
+                                        totalFinalAmountPaid: Number(normalTransaction.finalAmountPaid),
+                                        totalFinalAmountReceived: Number(normalTransaction.finalAmountReceived),
+                                        totalFinalAmountReceivedInNaira: Number(normalTransaction.finalAmountReceivedInNaira),
+                                        totalAdministrativeExpensesInNaira: Number(normalTransaction.administrativeExpensesInNaira),
+                                        totalActualAdministrativeExpensesInNaira: Number(normalTransaction.actualAdministrativeExpensesInNaira),
+                                        totalAdministrativeExpensesOverflow: Number(normalTransaction.administrativeExpensesOverflow)
+                                    },
+                                    'failed',
+                                    'subtract'
+                                );
+                            }
                         }
                     }
 
@@ -343,6 +402,31 @@ cron.schedule('59 23 * * *', async () => {
                             },
                             'received'
                         );
+
+                        const existing = await Exist.findOne(
+                            {
+                                type: 'pinglinks',
+                                status: 'failed',
+                                uniqueId: linkTransaction._id
+                            }
+                        )
+
+                        if (existing) {
+                            await keepRecords(
+                                'pinglinks',
+                                {
+                                    totalAmount: Number(linkTransaction.amount),
+                                    totalFinalAmountPaid: Number(linkTransaction.finalAmountPaid),
+                                    totalFinalAmountReceived: Number(linkTransaction.finalAmountReceived),
+                                    totalFinalAmountReceivedInNaira: Number(linkTransaction.finalAmountReceivedInNaira),
+                                    totalAdministrativeExpensesInNaira: Number(linkTransaction.administrativeExpensesInNaira),
+                                    totalActualAdministrativeExpensesInNaira: Number(linkTransaction.actualAdministrativeExpensesInNaira),
+                                    totalAdministrativeExpensesOverflow: Number(linkTransaction.administrativeExpensesOverflow)
+                                },
+                                'failed',
+                                'subtract'
+                            );
+                        }
 
                         const pingLink = await PingLink.findById(linkTransaction.pingLink);
                         if (pingLink) {

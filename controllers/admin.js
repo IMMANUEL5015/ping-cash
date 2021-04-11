@@ -5,7 +5,6 @@ const AppError = require('../utils/appError');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const Transaction = require('../models/transaction');
-const Record = require('../models/record');
 const { find, update, deleteOne } = require('../utils/crud');
 const PingLink = require('../models/pinglink');
 const LinkTransaction = require('../models/linktransaction');
@@ -310,7 +309,17 @@ exports.viewRefundedInternationalTransactions = catchAsync(async (req, res, next
         transactionType: 'send-to-nigeria',
         status: 'refunded'
     });
-    return res.status(200).json({ status: 'Success', transactions });
+
+    const recordOfRefundedTransactions = await retrieveRecords(
+        'international-transactions',
+        'refunded'
+    );
+
+    return res.status(200).json({
+        status: 'Success',
+        transactions,
+        recordOfRefundedTransactions
+    });
 });
 
 exports.findInternationalTransaction = find(Transaction);
@@ -337,7 +346,12 @@ const pingLinkStats = async (pinglink) => {
 
 exports.viewAllPinglinks = catchAsync(async (req, res, next) => {
     const allPinglinks = await PingLink.find({});
-    const record = await Record.findOne({ recordType: 'pinglinks', status: 'received' });
+    const record = await retrieveRecords('pinglinks', 'received');
+    const recordOfPaidPinglinkTransactions = await retrieveRecords(
+        'pinglinks',
+        'paid'
+    );
+
     const pinglinks = [];
 
     for (let i = 0; i < allPinglinks.length; i++) {
@@ -347,7 +361,12 @@ exports.viewAllPinglinks = catchAsync(async (req, res, next) => {
         pinglinks.push(obj);
     }
 
-    return res.status(200).json({ status: 'Success', pinglinks, record });
+    return res.status(200).json({
+        status: 'Success',
+        pinglinks,
+        record,
+        recordOfPaidPinglinkTransactions
+    });
 });
 
 
@@ -422,10 +441,15 @@ exports.viewFailedTransactions = catchAsync(async (req, res, next) => {
 
 exports.viewFailedPinglinkTransactions = catchAsync(async (req, res, next) => {
     const failedTransactions = await findAllFailedPinglinkTransactions();
+    const recordOfFailedPinglinkTransactions = await retrieveRecords(
+        'pinglinks',
+        'failed'
+    );
 
     return res.status(200).json({
         status: 'Success',
-        failedTransactions
+        failedTransactions,
+        recordOfFailedPinglinkTransactions
     });
 });
 

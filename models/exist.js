@@ -8,10 +8,10 @@ const existSchema = mongoose.Schema({
     },
     status: String,
     uniqueId: {
-        type: String,
-        unique: true
+        type: String
     }
 });
 
+existSchema.index({ type: 1, uniqueId: 1 }, { unique: true });
 
 module.exports = mongoose.model('Exist', existSchema);

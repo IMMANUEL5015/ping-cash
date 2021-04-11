@@ -48,6 +48,22 @@ exports.initializeTransaction = catchAsync(async (req, res, next) => {
         transaction.reference
     )
 
+    if (transaction.transactionType === 'send-to-nigeria') {
+        await keepRecords(
+            'international-transactions',
+            {
+                totalAmount: Number(transaction.amount),
+                totalFinalAmountPaid: Number(transaction.finalAmountPaid),
+                totalFinalAmountReceived: Number(transaction.finalAmountReceived),
+                totalFinalAmountReceivedInNaira: Number(transaction.finalAmountReceivedInNaira),
+                totalAdministrativeExpensesInNaira: Number(transaction.administrativeExpensesInNaira),
+                totalActualAdministrativeExpensesInNaira: Number(transaction.actualAdministrativeExpensesInNaira),
+                totalAdministrativeExpensesOverflow: Number(transaction.administrativeExpensesOverflow)
+            },
+            'pending'
+        );
+    }
+
     return res.status(201).json({
         status: 'success', message: 'Transaction Initialized Successfully. Please check your mail to see the ref code for this transaction.',
         transaction
@@ -270,7 +286,8 @@ cron.schedule('59 23 * * *', async () => {
                                     totalAdministrativeExpensesInNaira: Number(normalTransaction.administrativeExpensesInNaira),
                                     totalActualAdministrativeExpensesInNaira: Number(normalTransaction.actualAdministrativeExpensesInNaira),
                                     totalAdministrativeExpensesOverflow: Number(normalTransaction.administrativeExpensesOverflow)
-                                }
+                                },
+                                'received'
                             );
                         }
                     }
@@ -293,7 +310,8 @@ cron.schedule('59 23 * * *', async () => {
                                 totalAdministrativeExpensesInNaira: Number(linkTransaction.administrativeExpensesInNaira),
                                 totalActualAdministrativeExpensesInNaira: Number(linkTransaction.actualAdministrativeExpensesInNaira),
                                 totalAdministrativeExpensesOverflow: Number(linkTransaction.administrativeExpensesOverflow)
-                            }
+                            },
+                            'received'
                         );
 
                         const pingLink = await PingLink.findById(linkTransaction.pingLink);

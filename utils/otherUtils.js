@@ -133,9 +133,9 @@ cron.schedule('*/15 * * * * *', async () => {
     }
 });
 
-exports.keepRecords = async (type, data) => {
+exports.keepRecords = async (type, data, status) => {
     try {
-        const record = await Record.findOne({ recordType: type });
+        const record = await Record.findOne({ recordType: type, status });
 
         if (record) {
             await Record.findByIdAndUpdate(record._id, {
@@ -151,10 +151,24 @@ exports.keepRecords = async (type, data) => {
 
         if (!record) {
             data.recordType = type;
+            data.status = status;
             await Record.create(data);
         }
 
         return 'Record Updated Successfully!';
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+exports.retrieveRecords = async (recordType, status) => {
+    try {
+        const record = await Record.findOne({
+            recordType,
+            status
+        });
+
+        return record;
     } catch (error) {
         console.log(error);
     }

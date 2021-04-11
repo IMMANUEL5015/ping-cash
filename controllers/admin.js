@@ -16,7 +16,7 @@ const {
 } = require('../utils/fuspay_apis');
 const sendSms = require('../utils/sms');
 const {
-    generateRef,
+    generateRef, retrieveRecords,
     notifyPrivilegedUsersOfFailedTransactions
 } = require('../utils/otherUtils');
 const { refundMoneyToForeigner, refundMoneyToNigerian } = require('./transaction');
@@ -267,8 +267,19 @@ exports.viewInternationalTransactions = catchAsync(async (req, res, next) => {
             $in: ['received', 'paid', 'pending']
         }
     });
-    const record = await Record.findOne({ recordType: 'international-transactions' });
-    return res.status(200).json({ status: 'Success', transactions, record });
+
+    const record = await retrieveRecords('international-transactions', 'received');
+    const recordOfPendingTransactions = await retrieveRecords(
+        'international-transactions',
+        'pending'
+    );
+
+    return res.status(200).json({
+        status: 'Success',
+        transactions,
+        record,
+        recordOfPendingTransactions
+    });
 });
 
 exports.viewCancelledInternationalTransactions = catchAsync(async (req, res, next) => {
@@ -311,7 +322,7 @@ const pingLinkStats = async (pinglink) => {
 
 exports.viewAllPinglinks = catchAsync(async (req, res, next) => {
     const allPinglinks = await PingLink.find({});
-    const record = await Record.findOne({ recordType: 'pinglinks' });
+    const record = await Record.findOne({ recordType: 'pinglinks', status: 'received' });
     const pinglinks = [];
 
     for (let i = 0; i < allPinglinks.length; i++) {

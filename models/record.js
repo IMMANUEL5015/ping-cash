@@ -6,6 +6,7 @@ const recordSchema = mongoose.Schema({
         required: true,
         enum: ['pinglinks', 'international-transactions', 'local-transactions']
     },
+    status: String,
     totalAmount: Number,
     totalFinalAmountPaid: Number,
     totalFinalAmountReceived: Number,

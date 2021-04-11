@@ -261,7 +261,12 @@ exports.logout = (req, res) => {
 }
 
 exports.viewInternationalTransactions = catchAsync(async (req, res, next) => {
-    const transactions = await Transaction.find({ transactionType: 'send-to-nigeria' });
+    const transactions = await Transaction.find({
+        transactionType: 'send-to-nigeria',
+        status: {
+            $in: ['received', 'paid', 'pending']
+        }
+    });
     const record = await Record.findOne({ recordType: 'international-transactions' });
     return res.status(200).json({ status: 'Success', transactions, record });
 });

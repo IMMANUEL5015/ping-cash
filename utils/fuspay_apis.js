@@ -102,7 +102,8 @@ exports.authorizeMobileTransfer = async (authorize_url, data, transaction) => {
 
             const existing = await Exist.findOne({
                 type: "international-transactions",
-                uniqueId: transaction._id
+                uniqueId: transaction._id,
+                status: 'failed'
             });
 
             if (!existing) {
@@ -122,7 +123,8 @@ exports.authorizeMobileTransfer = async (authorize_url, data, transaction) => {
 
                 await Exist.create({
                     type: "international-transactions",
-                    uniqueId: transaction._id
+                    uniqueId: transaction._id,
+                    status: 'failed'
                 })
             }
 

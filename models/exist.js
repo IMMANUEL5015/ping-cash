@@ -6,7 +6,7 @@ const existSchema = mongoose.Schema({
         required: [true, 'Please specify the transaction type.'],
         enum: ["international-transactions", "pinglinks"]
     },
-
+    status: String,
     uniqueId: {
         type: String,
         unique: true

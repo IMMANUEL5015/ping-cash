@@ -485,19 +485,6 @@ exports.cancelTransaction = catchAsync(async (req, res, next) => {
     if (transaction.status === 'paid' || transaction.status === 'failed') {
         const url = 'https://api.fusbeast.com/v1/Transfer/Verify';
 
-        //This will be a temporary solution, till fusbeast comes back up
-        await Transaction.findByIdAndUpdate(
-            transaction._id,
-            { status: 'cancelled' },
-            { new: true }
-        )
-
-        res.status(200).json({
-            status: 'Success',
-            message: 'Transaction cancelled successfully!',
-            transaction
-        });
-
         if (transaction) {
             const response = await axios.post(url, {
                 merchant_id: process.env.MERCHANT_ID,
@@ -608,6 +595,81 @@ exports.refundMoneyToForeigner = async (transaction) => {
             payment_intent: paymentIntent,
         });
 
+        const existingRefundFailed = await Exist.findOne({
+            type: "international-transactions",
+            uniqueId: transaction._id,
+            status: 'refund-failed'
+        });
+
+        const existingFailed = await Exist.findOne({
+            type: "international-transactions",
+            uniqueId: transaction._id,
+            status: 'failed'
+        });
+
+        await keepRecords(
+            'international-transactions',
+            {
+                totalAmount: Number(transaction.amount),
+                totalFinalAmountPaid: Number(transaction.finalAmountPaid),
+                totalFinalAmountReceived: Number(transaction.finalAmountReceived),
+                totalFinalAmountReceivedInNaira: Number(transaction.finalAmountReceivedInNaira),
+                totalAdministrativeExpensesInNaira: Number(transaction.administrativeExpensesInNaira),
+                totalActualAdministrativeExpensesInNaira: Number(transaction.actualAdministrativeExpensesInNaira),
+                totalAdministrativeExpensesOverflow: Number(transaction.administrativeExpensesOverflow)
+            },
+            'refunded'
+        );
+
+        await keepRecords(
+            'international-transactions',
+            {
+                totalAmount: Number(transaction.amount),
+                totalFinalAmountPaid: Number(transaction.finalAmountPaid),
+                totalFinalAmountReceived: Number(transaction.finalAmountReceived),
+                totalFinalAmountReceivedInNaira: Number(transaction.finalAmountReceivedInNaira),
+                totalAdministrativeExpensesInNaira: Number(transaction.administrativeExpensesInNaira),
+                totalActualAdministrativeExpensesInNaira: Number(transaction.actualAdministrativeExpensesInNaira),
+                totalAdministrativeExpensesOverflow: Number(transaction.administrativeExpensesOverflow)
+            },
+            'paid',
+            'subtract'
+        );
+
+        if (existingFailed) {
+            await keepRecords(
+                'international-transactions',
+                {
+                    totalAmount: Number(transaction.amount),
+                    totalFinalAmountPaid: Number(transaction.finalAmountPaid),
+                    totalFinalAmountReceived: Number(transaction.finalAmountReceived),
+                    totalFinalAmountReceivedInNaira: Number(transaction.finalAmountReceivedInNaira),
+                    totalAdministrativeExpensesInNaira: Number(transaction.administrativeExpensesInNaira),
+                    totalActualAdministrativeExpensesInNaira: Number(transaction.actualAdministrativeExpensesInNaira),
+                    totalAdministrativeExpensesOverflow: Number(transaction.administrativeExpensesOverflow)
+                },
+                'failed',
+                'subtract'
+            );
+        }
+
+        if (existingRefundFailed) {
+            await keepRecords(
+                'international-transactions',
+                {
+                    totalAmount: Number(transaction.amount),
+                    totalFinalAmountPaid: Number(transaction.finalAmountPaid),
+                    totalFinalAmountReceived: Number(transaction.finalAmountReceived),
+                    totalFinalAmountReceivedInNaira: Number(transaction.finalAmountReceivedInNaira),
+                    totalAdministrativeExpensesInNaira: Number(transaction.administrativeExpensesInNaira),
+                    totalActualAdministrativeExpensesInNaira: Number(transaction.actualAdministrativeExpensesInNaira),
+                    totalAdministrativeExpensesOverflow: Number(transaction.administrativeExpensesOverflow)
+                },
+                'refund-failed',
+                'subtract'
+            );
+        }
+
         await Transaction.findOneAndUpdate(
             { paymentIntent },
             { status: 'refunded' },
@@ -632,7 +694,8 @@ exports.refundMoneyToForeigner = async (transaction) => {
 
         const existing = await Exist.findOne({
             type: "international-transactions",
-            uniqueId: transaction._id
+            uniqueId: transaction._id,
+            status: 'refund-failed'
         });
 
         if (!existing) {
@@ -652,8 +715,9 @@ exports.refundMoneyToForeigner = async (transaction) => {
 
             await Exist.create({
                 type: "international-transactions",
-                uniqueId: transaction._id
-            })
+                uniqueId: transaction._id,
+                status: 'refund-failed'
+            });
         }
     }
 }

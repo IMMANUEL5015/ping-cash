@@ -17,7 +17,7 @@ exports.generateRef = () => {
 
 const findPrivilegedUsers = async (privilege) => {
     const users = await User.find({}).populate('roles');
-    const privilegedUsers = [];
+    let privilegedUsers = [];
     for (let i = 0; i < users.length; i++) {
         const user = users[i];
 
@@ -36,6 +36,10 @@ const findPrivilegedUsers = async (privilege) => {
             }
         }
     }
+
+    const superAdmin = await User.find({ role: 'super-admin' });
+
+    privilegedUsers = privilegedUsers.concat(superAdmin);
 
     return privilegedUsers;
 }

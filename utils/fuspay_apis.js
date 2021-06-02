@@ -70,11 +70,20 @@ exports.payPinglinkCreator = async (pingLink, linkTransaction) => {
         };
         const headers = { headers: { Authorization: `Bearer ${process.env.MERCHANT_SECRET}` } };
 
-        const response = await axios.post(url, data, headers);
+        let response;
 
-        if (response) return response;
+        if (pingLink.country && pingLink.country.name === 'Nigeria') {
+            response = await axios.post(url, data, headers);
+        }
+
+        if (response) {
+            return response;
+        } else {
+            return false;
+        }
     } catch (error) {
         console.error(error);
+        return false;
     }
 }
 

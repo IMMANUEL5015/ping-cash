@@ -76,6 +76,10 @@ exports.payPinglinkCreator = async (pingLink, linkTransaction) => {
             response = await axios.post(url, data, headers);
         }
 
+        if (pingLink.country && pingLink.country.name !== 'Nigeria') {
+            response = true;
+        }
+
         if (response) {
             return response;
         } else {

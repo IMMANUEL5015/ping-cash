@@ -149,7 +149,10 @@ exports.verifyStripePayment = async (req, res, next) => {
         const session_id = event.data.object.id;
 
         // Handle the event
-        if (event && event.type === 'checkout.session.completed') {
+        if (
+            event && event.type === 'checkout.session.completed' ||
+            event && event.type === 'payment_intent.succeeded'
+        ) {
             const data = event.data.object;
             res.status(200).json();
 

@@ -154,7 +154,6 @@ exports.verifyStripePayment = async (req, res, next) => {
             event && event.type === 'payment_intent.succeeded'
         ) {
             const data = event.data.object;
-            console.log(data);
             res.status(200).json();
 
             let transaction = await Transaction.findOne({
@@ -162,7 +161,7 @@ exports.verifyStripePayment = async (req, res, next) => {
             });
 
             linkTransaction = await LinkTransaction.findOne({
-                session_id
+                payment_intent: session_id //This variable name might be adjusted later
             })
 
             let pingLink;
@@ -243,7 +242,7 @@ exports.verifyStripePayment = async (req, res, next) => {
                 const response = await payPinglinkCreator(pingLink, linkTransaction);
                 if (response) {
                     const messageToBeSent = `Dear ${pingLink.linkName}. ${linkTransaction.fullName} has pinged you ${linkTransaction.finalAmountReceived} Dollars (${Math.floor(Number(linkTransaction.finalAmountReceivedInNaira))} Naira) via your pinglink. Time: ${new Date(Date.now()).toLocaleTimeString()}. Fuspay Technology.`;
-                    const phoneNumber = "+234" + pingLink.phoneNumber.slice(1, 11);
+                    const phoneNumber = pingLink.phoneNumber;
                     const body = messageToBeSent;
                     await sendSms.sendWithTwilio(body, phoneNumber);
                 } else {

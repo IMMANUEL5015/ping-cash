@@ -15,6 +15,7 @@ const linkTransactionSchema = mongoose.Schema({
         ref: 'ChargeRate'
     },
     session_id: String,
+    payment_intent: String,
     exchangeRate: String,
     initialExchangeRate: String,
     adminExchangeRate: String,
@@ -30,7 +31,7 @@ const linkTransactionSchema = mongoose.Schema({
     status: {
         type: String,
         enum: ['pending', 'paid', 'received', 'failed'],
-        default: 'pending'
+        default: 'failed'
     },
     fullName: {
         type: String,

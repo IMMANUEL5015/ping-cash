@@ -154,11 +154,13 @@ exports.makePingLinkPayment = catchAsync(async (req, res, next) => {
 
     await LinkTransaction.findByIdAndUpdate(linkTransaction._id, {
         session_id: session.id,
+        payment_intent: session.payment_intent
     }, { new: true });
 
     return res.status(200).json({
         status: 'Success',
         session_id: session.id,
+        payment_intent: session.payment_intent,
         pingLink,
         linkTransaction
     });

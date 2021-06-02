@@ -17,9 +17,7 @@ const pinglinkSchema = mongoose.Schema({
     },
     phoneNumber: {
         type: String,
-        required: [true, 'Please provide your phone number.'],
-        minlength: [11, 'Your phone number should consist of 11 characters.'],
-        maxlength: [11, 'Your phone number should consist of 11 characters.']
+        required: [true, 'Please provide your phone number.']
     },
     email: {
         type: String,

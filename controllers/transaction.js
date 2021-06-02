@@ -154,6 +154,7 @@ exports.verifyStripePayment = async (req, res, next) => {
             event && event.type === 'payment_intent.succeeded'
         ) {
             const data = event.data.object;
+            console.log(data);
             res.status(200).json();
 
             let transaction = await Transaction.findOne({

@@ -22,7 +22,7 @@ exports.setBankAndBankCode = catchAsync(async (req, res, next) => {
         req.body.bankSortCode = await getBankSortCode(req.body.bankForRefund);
     }
 
-    if (req.body.bankName) {
+    if (req.body.bankName && !req.body.bankSortCode) {
         req.body.bankSortCode = await getBankSortCode(req.body.bankName);
     }
 

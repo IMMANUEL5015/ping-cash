@@ -49,7 +49,7 @@ exports.createPingLink = catchAsync(async (req, res, next) => {
         linkAmount, accountNumber,
         bankSortCode, redirectUrl,
         thankYouMessage, email, bankName,
-        paymentType, minimumAmount
+        paymentType, minimumAmount, country
     } = req.body;
 
     if (linkAmount.includes('.')) return next(new AppError('Please. The link amount must be an integer value.'));
@@ -68,7 +68,8 @@ exports.createPingLink = catchAsync(async (req, res, next) => {
         linkUrl,
         email,
         paymentType,
-        minimumAmount
+        minimumAmount,
+        country
     });
 
     await sendEmail.sendPingLinkDetails(email, linkName, linkUrl, pin);

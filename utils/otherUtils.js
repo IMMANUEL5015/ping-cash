@@ -100,7 +100,7 @@ exports.calcAdministrativeExpenses = async (dollarInNaira, finalAmountReceived, 
 
             if (expense && expense.flatOrPercentage === 'flat') {
                 obj.expense = expense;
-                obj.amountInNaira = expense.figure;
+                obj.amountInNaira = Number(expense.figure);
 
                 actualAdministrativeExpensesInNaira += obj.amountInNaira;
             }
@@ -109,7 +109,7 @@ exports.calcAdministrativeExpenses = async (dollarInNaira, finalAmountReceived, 
                 obj.expense = expense;
                 const { figure } = expense;
 
-                const expenseCut = (figure / 100) * dollarInNaira;
+                const expenseCut = (Number(figure) / 100) * dollarInNaira;
 
                 obj.amountInNaira = (expenseCut * Number(finalAmountReceived));
 

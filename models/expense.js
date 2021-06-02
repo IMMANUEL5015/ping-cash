@@ -17,7 +17,7 @@ const expenseSchema = mongoose.Schema({
         enum: ['percent', 'flat']
     },
     figure: {
-        type: Number,
+        type: String,
         required: [true, 'Please specify the figure.']
     }
 });

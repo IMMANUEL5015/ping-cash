@@ -1,6 +1,7 @@
 const randomString = require('random-string');
 const PingLink = require('../models/pinglink');
 const LinkTransaction = require('../models/linktransaction');
+const Country = require('../models/country');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const sendEmail = require('../utils/email');
@@ -8,6 +9,12 @@ const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_TEST_SECRET);
 const { error, success } = require('../utils/responses');
 const { generateRef } = require('../utils/otherUtils');
+
+exports.checkIfCountryExists = catchAsync(async (req, res, next) => {
+    const country = await Country.findById(req.body.country);
+    if (!country) return error(res, 400, 'Fail', 'Please specify a valid country!');
+    return next();
+});
 
 exports.checkPaymentType = catchAsync(async (req, res, next) => {
     const { paymentType, minimumAmount, linkAmount } = req.body;
@@ -36,7 +43,7 @@ exports.checkPaymentType = catchAsync(async (req, res, next) => {
 
 exports.createPingLink = catchAsync(async (req, res, next) => {
     const urlName = randomString({ length: 8, numeric: true });
-    const linkUrl = `https://pingcash-dev.netlify.app/pinglinks/${urlName}`
+    const linkUrl = `https://pingcash.fuspay.com.ng/pinglinks/${urlName}`
     const {
         linkName, phoneNumber, pin,
         linkAmount, accountNumber,

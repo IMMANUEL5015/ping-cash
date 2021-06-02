@@ -5,6 +5,11 @@ const pinglinkSchema = mongoose.Schema({
         type: String,
         required: [true, 'Please tell us your name.']
     },
+    country: {
+        required: [true, 'Country is required.'],
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Country'
+    },
     urlName: {
         type: String,
         required: [true, 'This field is required.'],
@@ -60,6 +65,11 @@ const pinglinkSchema = mongoose.Schema({
         default: Date.now
     },
     updatedAt: Date
+});
+
+pinglinkSchema.pre(/^find/, function (next) {
+    this.populate('country');
+    next();
 });
 
 module.exports = PingLink = mongoose.model('PingLink', pinglinkSchema);

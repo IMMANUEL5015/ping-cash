@@ -6,6 +6,7 @@ router.post(
     '/create_ping_link',
     pinglink.checkPaymentType,
     setBankAndBankCode,
+    pinglink.checkIfCountryExists,
     // pinglink.preventDuplicatePin,
     pinglink.createPingLink
 )

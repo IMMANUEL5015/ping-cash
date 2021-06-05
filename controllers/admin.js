@@ -558,3 +558,11 @@ cron.schedule('59 19 * * *', async () => {
         console.error(error);
     }
 });
+
+exports.viewWithdrawalRequests = catchAsync(async (req, res, next) => {
+    const withdrawalRequests = await Withdrawal.find({
+        status: 'raised'
+    }).sort('-createdAt');
+
+    return res.status(200).json(withdrawalRequests);
+});

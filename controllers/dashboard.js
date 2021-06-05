@@ -70,3 +70,22 @@ exports.myPingLinkTransactions = catchAsync(async (req, res, next) => {
         linkTransactions
     })
 });
+
+exports.setBankDetails = catchAsync(async (req, res, next) => {
+    const { accountNumber, bankName, bankSwiftCode } = req.body;
+
+    if (!accountNumber || !bankName || !bankSwiftCode) {
+        return next(new AppError('Please provide all relevant bank details.', 400));
+    }
+
+    await User.findByIdAndUpdate(
+        req.user._id,
+        { accountNumber, bankName, bankSwiftCode },
+        { new: true }
+    );
+
+    return res.status(200).json({
+        status: 'Success',
+        message: 'Bank details addedd successfully!'
+    })
+});

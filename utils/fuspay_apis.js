@@ -5,6 +5,7 @@ const {
 } = require('./otherUtils');
 const Transaction = require('../models/transaction');
 const Exist = require('../models/exist');
+const User = require('../models/user');
 
 exports.initTransferAndGenUssd = async (url, transaction) => {
     try {
@@ -57,12 +58,18 @@ exports.verifyTransfer = async (url, transaction) => {
 
 exports.payPinglinkCreator = async (pingLink, linkTransaction) => {
     try {
+        const user = await User.findOne({ email: pingLink.email });
+
+        if (!user) {
+            return false;
+        }
+
         const url = 'https://api.fusbeast.com/v1/Transfer/Initiate';
         const data = {
             "pin": process.env.PIN,
             "narration": "Money Transfer Via PingLink.",
-            "account_number": pingLink.accountNumber,
-            "bank_code": pingLink.bankSortCode,
+            "account_number": user.accountNumber,
+            "bank_code": user.bankSwiftCode,
             "to": "bank",
             "amount": `${Math.floor(Number(linkTransaction.finalAmountReceivedInNaira))}`,
             reference: linkTransaction.reference,

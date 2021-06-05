@@ -14,10 +14,9 @@ const privilegeRouter = require('./routes/privilege');
 const notificationRouter = require('./routes/notification');
 const expenseRouter = require('./routes/expense');
 const roleRouter = require('./routes/role');
-const auth = require('./routes/auth');
+const dashboard = require('./routes/dashboard');
 
 router.use('/admin', adminRouter);
-router.use('/auth', auth);
 router.use('/notifications', notificationRouter);
 router.use('/expenses', expenseRouter);
 router.use('/pcategories', pcategoryRouter);
@@ -32,6 +31,7 @@ router.use('/sms-services', smsRouter);
 router.use('/general', generalRouter);
 
 router.get('/countries', currencyController.getCountries);
+router.use(dashboard);
 
 router.all('*', (req, res) => {
     res.status(404).json({

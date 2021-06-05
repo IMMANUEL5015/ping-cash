@@ -46,9 +46,9 @@ exports.createPingLink = catchAsync(async (req, res, next) => {
     const linkUrl = `https://pingcash.fuspay.com.ng/pinglinks/${urlName}`
     const {
         linkName, phoneNumber, pin,
-        linkAmount, accountNumber,
-        bankSortCode, redirectUrl,
-        thankYouMessage, email, bankName,
+        linkAmount, /*accountNumber,*/
+        /*bankSortCode,*/ redirectUrl,
+        thankYouMessage, email, /*bankName,*/
         paymentType, minimumAmount, country
     } = req.body;
 
@@ -60,9 +60,9 @@ exports.createPingLink = catchAsync(async (req, res, next) => {
         urlName,
         pin,
         linkAmount,
-        accountNumber,
-        bankName,
-        bankSortCode,
+        // accountNumber,
+        // bankName,
+        // bankSortCode,
         redirectUrl,
         thankYouMessage,
         linkUrl,
@@ -193,7 +193,7 @@ exports.updateTransaction = catchAsync(async (req, res, next) => {
         pin, linkName, urlName,
         phoneNumber, email, paymentType,
         minimumAmount, newPin, linkAmount,
-        accountNumber, bankName, bankSortCode,
+        // accountNumber, bankName, bankSortCode,
         thankYouMessage, redirectUrl, linkUrl
     } = req.body;
 
@@ -211,9 +211,9 @@ exports.updateTransaction = catchAsync(async (req, res, next) => {
     if (minimumAmount) pinglink.minimumAmount = minimumAmount;
     if (newPin) pinglink.pin = newPin;
     if (linkAmount) pinglink.linkAmount = linkAmount;
-    if (accountNumber) pinglink.accountNumber = accountNumber;
-    if (bankName) pinglink.bankName = bankName;
-    if (bankSortCode) pinglink.bankSortCode = bankSortCode;
+    // if (accountNumber) pinglink.accountNumber = accountNumber;
+    // if (bankName) pinglink.bankName = bankName;
+    // if (bankSortCode) pinglink.bankSortCode = bankSortCode;
     if (redirectUrl) pinglink.redirectUrl = redirectUrl;
     if (thankYouMessage) pinglink.thankYouMessage = thankYouMessage;
     if (linkUrl) pinglink.linkUrl = linkUrl;

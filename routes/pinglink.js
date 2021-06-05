@@ -5,7 +5,7 @@ const { setBankAndBankCode } = require('../middlewares/general');
 router.post(
     '/create_ping_link',
     pinglink.checkPaymentType,
-    setBankAndBankCode,
+    // setBankAndBankCode,
     pinglink.checkIfCountryExists,
     // pinglink.preventDuplicatePin,
     pinglink.createPingLink

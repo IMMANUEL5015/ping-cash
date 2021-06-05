@@ -45,7 +45,19 @@ const userSchema = mongoose.Schema({
         }
     },
     passwordResetToken: String,
-    passwordResetExpires: Date
+    passwordResetExpires: Date,
+    accountNumber: {
+        type: String,
+        required: [true, 'Please tell us your account number.']
+    },
+    bankName: {
+        type: String,
+        required: [true, 'Please tell us your bank name.']
+    },
+    bankSwiftCode: {
+        type: String,
+        required: [true, 'Please tell us your bank swift code.']
+    }
 });
 
 userSchema.pre('save', async function (next) {

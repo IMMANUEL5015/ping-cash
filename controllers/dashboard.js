@@ -56,7 +56,8 @@ exports.getLoginCode = catchAsync(async (req, res, next) => {
 });
 
 exports.myPinglinks = catchAsync(async (req, res, next) => {
-    const myPingLinks = await PingLink.find({ email: req.user.email });
+    const myPingLinks = await PingLink.find({ email: req.user.email })
+        .sort('-createdAt');
 
     let walletBalance = calcWalletBalance(myPingLinks);
 
@@ -71,7 +72,7 @@ exports.findPingLink = find(PingLink);
 exports.myPingLinkTransactions = catchAsync(async (req, res, next) => {
     const linkTransactions = await LinkTransaction.find({
         pingLink: req.data._id
-    })
+    }).sort('-createdAt');
 
     return res.status(200).json({
         pingLink: req.data,
@@ -118,3 +119,11 @@ exports.validateWithdrawalRequest = catchAsync(async (req, res, next) => {
 });
 
 exports.makeWithdrawalRequest = create(Withdrawal);
+
+exports.myWithdrawalRequests = catchAsync(async (req, res, next) => {
+    const withdrawalRequests = await Withdrawal.find({
+        user: req.user._id
+    }).sort('-createdAt');
+
+    return res.status(200).json(withdrawalRequests);
+});

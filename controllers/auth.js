@@ -50,3 +50,8 @@ exports.getLoginCode = catchAsync(async (req, res, next) => {
     //If no pinglink with that email address, direct the user to create a pinglink
     return next(new AppError('Please create a pinglink', 403));
 });
+
+exports.myPinglinks = catchAsync(async (req, res, next) => {
+    const myPingLinks = await PingLink.find({ email: req.user.email });
+    return res.status(200).json(myPingLinks);
+})

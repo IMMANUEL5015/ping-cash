@@ -18,8 +18,8 @@ const userSchema = mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['super-admin', 'system-admin', 'admin'],
-        default: 'admin'
+        enum: ['customer', 'super-admin', 'system-admin', 'admin'],
+        default: 'customer'
     },
     roles: [
         {

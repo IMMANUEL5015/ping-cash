@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const randomString = require('random-string');
 const User = require('../models/user');
 const notification = require('../controllers/notification');
@@ -188,4 +189,8 @@ exports.retrieveRecords = async (recordType, status) => {
     } catch (error) {
         console.log(error);
     }
+}
+
+exports.genLoginCode = () => {
+    return crypto.randomBytes(4).toString('hex');
 }

@@ -14,8 +14,10 @@ const privilegeRouter = require('./routes/privilege');
 const notificationRouter = require('./routes/notification');
 const expenseRouter = require('./routes/expense');
 const roleRouter = require('./routes/role');
+const auth = require('./routes/auth');
 
 router.use('/admin', adminRouter);
+router.use('/auth', auth);
 router.use('/notifications', notificationRouter);
 router.use('/expenses', expenseRouter);
 router.use('/pcategories', pcategoryRouter);

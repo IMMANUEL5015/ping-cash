@@ -110,3 +110,18 @@ exports.failedTransactionsEmail = async (user) => {
   const message = template(title, body);
   return await sendMail(user.email, title, message);
 }
+
+exports.sendLoginCode = async (user, code) => {
+  let title = 'Pinglink Authentication Code';
+  const body = `<h3>Hello ${user.name}.</h3>
+  <p>You login attempt was successful.</p>
+  <p>
+    Your authentication code is ${code}.
+  </p>
+  <p>
+    If you did not make any attempt to login, please ignore this email. 
+  </p>
+  `;
+  const message = template(title, body);
+  return await sendMail(user.email, title, message);
+}

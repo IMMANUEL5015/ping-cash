@@ -32,7 +32,8 @@ const pinglinkSchema = mongoose.Schema({
     },
     minimumAmount: String,
     numOfLinkTransactions: { type: Number, default: 0 },
-    totalAmountOfPaidLinkTransactions: { type: Number, default: 0 },
+    totalAmountOfPaidLinkTransactions: { type: Number, default: 0 }, //Amount received in pinglink's creator bank account
+    totalAmountPaid: { type: Number, default: 0 }, //Amount paid to stripe to be received by pinglink creator
     pin: {
         type: String,
         required: [true, 'Please provide a unique tracking pin for this ping link.'],

@@ -223,7 +223,16 @@ exports.verifyStripePayment = async (req, res, next) => {
             } else if (linkTransaction && pingLink) {
                 await LinkTransaction.findByIdAndUpdate(linkTransaction._id, {
                     status: 'paid'
-                }, { new: true })
+                }, { new: true });
+
+                await PingLink.findByIdAndUpdate(
+                    pingLink._id,
+                    {
+                        totalAmountPaid:
+                            (pingLink.totalAmountPaid) + Number(linkTransaction.finalAmountReceived)
+                    },
+                    { new: true }
+                )
 
                 await keepRecords(
                     'pinglinks',

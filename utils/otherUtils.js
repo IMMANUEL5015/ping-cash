@@ -10,6 +10,7 @@ const AppError = require('./appError');
 const catchAsync = require('./catchAsync');
 const Expense = require('../models/expense');
 const Record = require('../models/record');
+const Withdrawal = require('../models/withdrawal');
 
 exports.generateRef = () => {
     const uniqueString = randomString({ length: 26, numeric: true });
@@ -193,4 +194,22 @@ exports.retrieveRecords = async (recordType, status) => {
 
 exports.genLoginCode = () => {
     return crypto.randomBytes(4).toString('hex');
+}
+
+exports.calcWalletBalance = (myPingLinks) => {
+    let walletBalance = 0;
+    for (let i = 0; i < myPingLinks.length; i++) {
+        walletBalance += Number(myPingLinks[i].totalAmountPaid);
+    }
+    return walletBalance;
+}
+
+exports.preventOverWithdrawal = async (user, amount) => {
+    let totalAmount = 0;
+    const withdrawals = await Withdrawal.find({ user });
+    for (let i = 0; i < withdrawals.length; i++) {
+        totalAmount += withdrawals[i].amount;
+    }
+
+    return totalAmount + Number(amount);
 }

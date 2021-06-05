@@ -1,11 +1,13 @@
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const User = require('../models/user');
+const Withdrawal = require('../models/withdrawal');
 const PingLink = require('../models/pinglink');
 const LinkTransaction = require('../models/linktransaction');
 const { sendLoginCode } = require('../utils/email');
-const { genLoginCode } = require('../utils/otherUtils');
-const { find } = require('../utils/crud');
+const { genLoginCode, calcWalletBalance,
+    preventOverWithdrawal } = require('../utils/otherUtils');
+const { find, create } = require('../utils/crud');
 
 exports.getLoginCode = catchAsync(async (req, res, next) => {
     //Get email from body.
@@ -55,7 +57,13 @@ exports.getLoginCode = catchAsync(async (req, res, next) => {
 
 exports.myPinglinks = catchAsync(async (req, res, next) => {
     const myPingLinks = await PingLink.find({ email: req.user.email });
-    return res.status(200).json(myPingLinks);
+
+    let walletBalance = calcWalletBalance(myPingLinks);
+
+    return res.status(200).json({
+        myPingLinks,
+        walletBalance
+    });
 });
 
 exports.findPingLink = find(PingLink);
@@ -89,3 +97,24 @@ exports.setBankDetails = catchAsync(async (req, res, next) => {
         message: 'Bank details addedd successfully!'
     })
 });
+
+exports.validateWithdrawalRequest = catchAsync(async (req, res, next) => {
+    req.body.user = req.user._id;
+    req.body.status = 'raised';
+
+    if (req.body.amount) {
+        const myPingLinks = await PingLink.find({ email: req.user.email });
+        let walletBalance = calcWalletBalance(myPingLinks);
+        let currentRaisedAmount = await preventOverWithdrawal(req.user._id, req.body.amount);
+
+        if (req.body.amount > walletBalance || currentRaisedAmount > walletBalance) {
+            return next(
+                new AppError('You cannot withdraw more than the amount in your wallet balance.', 400)
+            );
+        }
+    }
+
+    return next();
+});
+
+exports.makeWithdrawalRequest = create(Withdrawal);

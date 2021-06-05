@@ -12,4 +12,8 @@ router.get('/my_pinglinks/:id', protect,
 
 router.post('/set_bank_details', protect, dashboard.setBankDetails);
 
+router.post('/withdrawal_request', protect,
+    dashboard.validateWithdrawalRequest,
+    dashboard.makeWithdrawalRequest);
+
 module.exports = router;

@@ -21,4 +21,12 @@ const withdrawalSchema = mongoose.Schema({
     }
 });
 
+withdrawalSchema.pre(/^find/, function (next) {
+    this.populate({
+        path: 'user',
+        select: 'name email accountNumber bankName bankSwiftCode'
+    });
+    next();
+});
+
 module.exports = Withdrawal = mongoose.model('Withdrawal', withdrawalSchema);

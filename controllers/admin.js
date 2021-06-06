@@ -15,7 +15,7 @@ const {
 } = require('../utils/fuspay_apis');
 const sendSms = require('../utils/sms');
 const {
-    generateRef, retrieveRecords,
+    generateRef, retrieveRecords, calcTotalPayoutAmount,
     notifyPrivilegedUsersOfFailedTransactions
 } = require('../utils/otherUtils');
 const { refundMoneyToForeigner, refundMoneyToNigerian } = require('./transaction');
@@ -564,5 +564,37 @@ exports.viewWithdrawalRequests = catchAsync(async (req, res, next) => {
         status: 'raised'
     }).sort('-createdAt');
 
-    return res.status(200).json(withdrawalRequests);
+    const totalPayoutAmount = calcTotalPayoutAmount(withdrawalRequests);
+
+    return res.status(200).json({ withdrawalRequests, totalPayoutAmount });
+});
+
+exports.makePayouts = catchAsync(async (req, res, next) => {
+    const withdrawals = req.body.withdrawals;
+    if (!withdrawals) {
+        return next(
+            new AppError('Please specify the withdrawals to be processed.', 400)
+        )
+    }
+
+    if (!Array.isArray(withdrawals)) {
+        return next(
+            new AppError('The withdrawals to be processed should be in a list.', 400)
+        )
+    }
+
+    for (let i = 0; i < withdrawals.length; i++) {
+        let withdrawal = withdrawals[i];
+
+        withdrawal = await Withdrawal.findByIdAndUpdate(
+            withdrawal,
+            { status: 'satisfied' },
+            { new: true }
+        );
+    }
+
+    return res.status(200).json({
+        status: 'Success',
+        message: 'Successfully processed!'
+    });
 });

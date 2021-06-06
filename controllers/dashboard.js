@@ -5,8 +5,8 @@ const Withdrawal = require('../models/withdrawal');
 const PingLink = require('../models/pinglink');
 const LinkTransaction = require('../models/linktransaction');
 const { sendLoginCode } = require('../utils/email');
-const { genLoginCode, calcWalletBalance,
-    preventOverWithdrawal } = require('../utils/otherUtils');
+const { genLoginCode, calcWalletBalance, calcWithdrawals,
+    preventOverWithdrawal, calcTotalAmountReceived } = require('../utils/otherUtils');
 const { find, create } = require('../utils/crud');
 
 exports.getLoginCode = catchAsync(async (req, res, next) => {
@@ -60,10 +60,16 @@ exports.myPinglinks = catchAsync(async (req, res, next) => {
         .sort('-createdAt');
 
     let walletBalance = calcWalletBalance(myPingLinks);
+    let totalAmountReceived = calcTotalAmountReceived(myPingLinks);
+    let amountFromWithdrawals = await calcWithdrawals(req.user._id);
+
+    walletBalance = walletBalance - amountFromWithdrawals;
+    totalAmountReceived = totalAmountReceived + amountFromWithdrawals;
 
     return res.status(200).json({
         myPingLinks,
-        walletBalance
+        walletBalance,
+        totalAmountReceived
     });
 });
 

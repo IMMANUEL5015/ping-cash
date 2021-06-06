@@ -204,6 +204,14 @@ exports.calcWalletBalance = (myPingLinks) => {
     return walletBalance;
 }
 
+exports.calcTotalAmountReceived = (myPingLinks) => {
+    let totalAmountReceived = 0;
+    for (let i = 0; i < myPingLinks.length; i++) {
+        totalAmountReceived += Number(myPingLinks[i].totalAmountOfPaidLinkTransactions);
+    }
+    return totalAmountReceived;
+}
+
 exports.preventOverWithdrawal = async (user, amount) => {
     let totalAmount = 0;
     const withdrawals = await Withdrawal.find({ user });
@@ -212,4 +220,25 @@ exports.preventOverWithdrawal = async (user, amount) => {
     }
 
     return totalAmount + Number(amount);
+}
+
+exports.calcTotalPayoutAmount = (withdrawals) => {
+    let totalPayoutAmount = 0;
+    for (let i = 0; i < withdrawals.length; i++) {
+        totalPayoutAmount += withdrawals[i].amount;
+    }
+
+    return totalPayoutAmount;
+}
+
+exports.calcWithdrawals = async (user) => {
+    let figure = 0;
+
+    const withdrawals = await Withdrawal.find({ user, status: 'satisfied' });
+
+    for (let i = 0; i < withdrawals.length; i++) {
+        figure += withdrawals[i].amount;
+    }
+
+    return figure;
 }

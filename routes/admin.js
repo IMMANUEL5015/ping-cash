@@ -105,11 +105,16 @@ router.get(
     admin.viewFailedPinglinkTransactions
 );
 
-router.post(
+router.get(
     '/view_withdrawal_requests/',
     checkIfLoggedInUserHasRequiredPrivilege('make-payout'),
     admin.viewWithdrawalRequests
 );
 
+router.patch(
+    '/make_payout_for_pinglinks',
+    checkIfLoggedInUserHasRequiredPrivilege('make-payout'),
+    admin.makePayouts
+)
 
 module.exports = router;

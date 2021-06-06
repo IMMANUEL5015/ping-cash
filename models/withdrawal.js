@@ -26,7 +26,7 @@ withdrawalSchema.pre(/^find/, function (next) {
         path: 'user',
         select: 'name email accountNumber bankName bankSwiftCode'
     });
-    next();
+    return next();
 });
 
 module.exports = Withdrawal = mongoose.model('Withdrawal', withdrawalSchema);

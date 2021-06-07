@@ -132,6 +132,12 @@ exports.validateWithdrawalRequest = catchAsync(async (req, res, next) => {
                 new AppError('You cannot withdraw more than the amount in your wallet balance.', 400)
             );
         }
+
+        if (Number(req.body.amount) < 5000) {
+            return next(
+                new AppError('You cannot make a withdrawal of less than 5000 dollars.', 400)
+            );
+        }
     }
 
     return next();

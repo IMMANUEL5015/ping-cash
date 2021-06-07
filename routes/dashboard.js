@@ -10,6 +10,9 @@ router.get('/my_pinglinks/:id', protect,
     dashboard.findPingLink,
     dashboard.myPingLinkTransactions);
 
+router.get('/all_my_link_transactions', protect,
+    dashboard.allMyPingLinksTransactions);
+
 router.patch('/set_bank_details', protect, dashboard.setBankDetails);
 
 router.post('/withdrawal_request', protect,

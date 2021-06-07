@@ -86,6 +86,19 @@ exports.myPingLinkTransactions = catchAsync(async (req, res, next) => {
     })
 });
 
+exports.allMyPingLinksTransactions = catchAsync(async (req, res, next) => {
+    const pinglinks = await PingLink.find({ email: req.user.email });
+    const ids = pinglinks.map(pinglink => pinglink.id);
+
+    const linkTransactions = await LinkTransaction.find({
+        pingLink: ids
+    }).sort('-createdAt');
+
+    return res.status(200).json({
+        linkTransactions
+    });
+});
+
 exports.setBankDetails = catchAsync(async (req, res, next) => {
     const { accountNumber, bankName, bankSwiftCode } = req.body;
 

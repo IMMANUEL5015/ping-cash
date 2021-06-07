@@ -28,6 +28,9 @@ const linkTransactionSchema = mongoose.Schema({
     charges: {
         type: String
     },
+    securityDeposit: {
+        type: String
+    },
     status: {
         type: String,
         enum: ['pending', 'paid', 'received', 'failed'],
@@ -84,8 +87,18 @@ linkTransactionSchema.pre('save', async function (next) {
 
     this.chargeRate = chargeRate ? chargeRate : undefined;
 
+    //Calculate the security deposit
+    const securityDepositChargeRate = await ChargeRate.findOne({
+        name: 'security-deposit'
+    });
+
+    if (securityDepositChargeRate && securityDepositChargeRate.flatOrPercentage === 'percent') {
+        this.securityDeposit = (Number(securityDepositChargeRate.figure) / 100) * Number(this.amount);
+    }
+
+
     //Calculate the finalAmountReceived
-    this.finalAmountReceived = Number(this.amount) - Number(this.charges);
+    this.finalAmountReceived = Number(this.amount) - (Number(this.charges) + Number(this.securityDeposit));
 
     let currentCreditRate = await CreditRate.findOne({ name: 'credit-rate' });
     currentCreditRate = Number(currentCreditRate.figure);

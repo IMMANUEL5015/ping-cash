@@ -849,3 +849,78 @@ cron.schedule('59 21 * * *', async () => {
         console.error(error);
     }
 });
+
+exports.processPinglinkTransactionPayment = async (linkTransaction, pingLink) => {
+    try{
+        await LinkTransaction.findByIdAndUpdate(linkTransaction._id, {
+            status: 'paid'
+        }, { new: true });
+    
+        await PingLink.findByIdAndUpdate(
+            pingLink._id,
+            {
+                totalAmountPaid:
+                    (pingLink.totalAmountPaid) + Number(linkTransaction.finalAmountReceived)
+            },
+            { new: true }
+        )
+    
+        await keepRecords(
+            'pinglinks',
+            {
+                totalAmount: Number(linkTransaction.amount),
+                totalFinalAmountPaid: Number(linkTransaction.amount),
+                totalFinalAmountReceived: Number(linkTransaction.finalAmountReceived),
+                totalFinalAmountReceivedInNaira: Number(linkTransaction.finalAmountReceivedInNaira),
+                totalAdministrativeExpensesInNaira: Number(linkTransaction.administrativeExpensesInNaira),
+                totalActualAdministrativeExpensesInNaira: Number(linkTransaction.actualAdministrativeExpensesInNaira),
+                totalAdministrativeExpensesOverflow: Number(linkTransaction.administrativeExpensesOverflow)
+            },
+            'paid'
+        );
+    
+        const response = await payPinglinkCreator(pingLink, linkTransaction);
+        if (response) {
+            const messageToBeSent = `Dear ${pingLink.linkName}. ${linkTransaction.fullName} has pinged you ${linkTransaction.finalAmountReceived} Dollars (${Math.floor(Number(linkTransaction.finalAmountReceivedInNaira))} Naira) via your pinglink. Time: ${new Date(Date.now()).toLocaleTimeString()}. Fuspay Technology.`;
+            const phoneNumber = pingLink.phoneNumber;
+            const body = messageToBeSent;
+            await sendSms.sendWithTwilio(body, phoneNumber);
+        } else {
+            await LinkTransaction.findByIdAndUpdate(linkTransaction._id, {
+                status: 'failed'
+            }, { new: true })
+    
+            await keepRecords(
+                'pinglinks',
+                {
+                    totalAmount: Number(linkTransaction.amount),
+                    totalFinalAmountPaid: Number(linkTransaction.amount),
+                    totalFinalAmountReceived: Number(linkTransaction.finalAmountReceived),
+                    totalFinalAmountReceivedInNaira: Number(linkTransaction.finalAmountReceivedInNaira),
+                    totalAdministrativeExpensesInNaira: Number(linkTransaction.administrativeExpensesInNaira),
+                    totalActualAdministrativeExpensesInNaira: Number(linkTransaction.actualAdministrativeExpensesInNaira),
+                    totalAdministrativeExpensesOverflow: Number(linkTransaction.administrativeExpensesOverflow)
+                },
+                'failed'
+            );
+    
+            await Exist.create(
+                {
+                    type: 'pinglinks',
+                    status: 'failed',
+                    uniqueId: linkTransaction._id
+                }
+            )
+    
+            const obj = {
+                message: 'An error occured when trying to transfer money to a pinglink creator.',
+                type: 'pinglink-transaction',
+                transactionId: linkTransaction._id
+            };
+    
+            await notifyPrivilegedUsersOfFailedTransactions(obj);
+        }
+    }catch(error){
+        console.error(error);
+    }
+}

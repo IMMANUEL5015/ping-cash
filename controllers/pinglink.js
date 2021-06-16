@@ -9,6 +9,8 @@ const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_TEST_SECRET);
 const { error, success } = require('../utils/responses');
 const { generateRef } = require('../utils/otherUtils');
+const braintree = require('braintree');
+const {processPinglinkTransactionPayment} = require('./transaction');
 
 exports.checkIfCountryExists = catchAsync(async (req, res, next) => {
     const country = await Country.findById(req.body.country);
@@ -221,4 +223,63 @@ exports.updateTransaction = catchAsync(async (req, res, next) => {
     pinglink = await pinglink.save();
 
     return success(res, 200, 'Success', 'Pinglink updated successfully.', pinglink);
+});
+
+exports.initializePinglinkPaymentWithBraintree = catchAsync(async(req, res, next) => {
+    let pingLink = req.pingLink;
+    const amount = req.amount;
+
+    const linkTransaction = await LinkTransaction.create({
+        pingLink,
+        reference: generateRef(),
+        amount: amount ? amount : pingLink.linkAmount,
+        fullName: req.body.fullName,
+        email: req.body.email,
+        phoneNumber: req.body.phoneNumber
+    });
+
+    const gateway = braintree.connect({
+        "environment": braintree.Environment.Sandbox,
+        "merchantId": process.env.BRAIN_TREE_MERCHANT_ID,
+        "publicKey": process.env.BRAIN_TREE_PUBLIC_KEY,
+        "privateKey": process.env.BRAIN_TREE_PRIVATE_KEY
+    });
+    let token = (await gateway.clientToken.generate({})).clientToken;
+    res.status(200).json({
+        status: 'success', 
+        success: true,
+        pingLink,
+        linkTransaction, 
+        data: token
+    });
+});
+
+exports.confirmPinglinkPaymentWithBraintree = catchAsync(async(req, res, next) => {
+    /*
+        Pinglink and linkTransaction will be gotten from the get endpoint
+        and passed into the request body
+    */
+    const data = req.body;
+    const gateway = braintree.connect({
+        "environment": braintree.Environment.Sandbox,
+        "merchantId": process.env.BRAIN_TREE_MERCHANT_ID,
+        "publicKey": process.env.BRAIN_TREE_PUBLIC_KEY,
+        "privateKey": process.env.BRAIN_TREE_PRIVATE_KEY
+    });
+    
+    let transactionResponse = await gateway.transaction.sale({
+        amount: data.amount,
+        paymentMethodNonce: data.nonce,
+        options: {
+            submitForSettlement: true
+        }
+    });
+    
+    await processPinglinkTransactionPayment(data.linkTransaction, data.pingLink);
+
+    return res.status(200).json({
+        status: 'success', 
+        success: true, 
+        data: transactionResponse
+    });
 });

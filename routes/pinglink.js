@@ -27,6 +27,18 @@ router.post(
     pinglink.findPingLink,
     pinglink.flexiblePayments,
     pinglink.makePingLinkPayment
+);
+
+router.get(
+    '/initialize_ping_link_payment/braintree/:urlname',
+    pinglink.findPingLink,
+    pinglink.flexiblePayments,
+    pinglink.initializePinglinkPaymentWithBraintree
+)
+
+router.post(
+    '/confirm_ping_link_payment/braintree/:urlname',
+    pinglink.confirmPinglinkPaymentWithBraintree
 )
 
 router.patch(
